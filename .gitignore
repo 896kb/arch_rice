@@ -14,3 +14,5 @@
 !ranger/**/*
 !urxvt
 !urxvt/**/*
+!spotify-tui
+!spotify-tui/**/*
