@@ -32,11 +32,11 @@ exec --no-startup-id nm-applet
 
 # Starting picom
 
-exec --no-startup-id picom --config ~/.config/picom/picom.conf -b
+exec_always --no-startup-id picom --config ~/.config/picom/picom.conf -b
 
 # Using feh as background
 
-exec_always --no-startup-id feh --bg-fill ~/Documents/Pictures/psmp.png
+exec_always --no-startup-id feh --bg-fill ~/Downloads/background-3.png
 
 # Loading Xresources for xrdb
 
@@ -45,6 +45,10 @@ exec_always --no-startup-id xrdb ~/.config/urxvt/.Xresources
 # Starting polybar
 
 exec_always --no-startup-id ~/.config/polybar/launch.sh
+
+# Reload urxvt settings
+
+exec_always xrdb ~/.Xresources
 
 # Use pactl to adjust volume in PulseAudio.
 set $refresh_i3status killall -SIGUSR1 i3status
@@ -67,7 +71,7 @@ bindsym $mod+d exec dmenu_run
 # There also is the (new) i3-dmenu-desktop which only displays applications
 # shipping a .desktop file. It is a wrapper around dmenu, so you need that
 # installed.
-# bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
+bindsym $mod+Shift+d exec --no-startup-id i3-dmenu-desktop
 
 # change focus
 bindsym $mod+h focus left
@@ -155,6 +159,9 @@ bindsym $mod+Shift+7 move container to workspace number $ws7
 bindsym $mod+Shift+8 move container to workspace number $ws8
 bindsym $mod+Shift+9 move container to workspace number $ws9
 bindsym $mod+Shift+0 move container to workspace number $ws10
+
+# Open emoji menu
+bindsym $mod+p exec ~/.config/i3/dmenu-emoji.sh
 
 # reload the configuration file
 bindsym $mod+Shift+c reload

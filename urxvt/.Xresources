@@ -11,13 +11,14 @@ URxvt*saveLines: 5000
 URxvt*termName: rxvt-unicode
 URxvt.depth: 32
 URxvt.perl-ext-common: default,matcher
-URxvt.urlLauncher: firefox
+URxvt.urlLauncher: brave
 URxvt.matcher.button: 1
 URxvt.internalBorder: 50
 
 ! special
 *.foreground:   #c5c8c6
-*.background:   rgba:3700/3B00/4100/C800
+! *.background:   rgba:3700/3B00/4100/C800
+*.background:   [50]#000000
 *.cursorColor:  #c5c8c6
 
 ! black
