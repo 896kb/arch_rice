@@ -52,7 +52,7 @@ padding-right = 2
 module-margin-left = 1
 module-margin-right = 2
 
-font-0 = xos4 Terminus:size=10;1
+font-0 = xos4 Terminus:size=10:antialias=false;1
 font-1 = unifont:fontformat=truetype:size=8:antialias=false;0
 font-2 = siji:pixelsize=10;1
 
@@ -139,7 +139,7 @@ label-song-ellipsis = true
 type = internal/xbacklight
 
 format = <label> <bar>
-label = BL
+label = 
 
 bar-width = 10
 bar-indicator = |
@@ -212,8 +212,8 @@ label = %date% %time%
 [module/pulseaudio]
 type = internal/pulseaudio
 
-format-volume = <label-volume> <bar-volume>
-label-volume = VOL %percentage%%
+format-volume = <label-volume>
+label-volume =  %percentage%%
 label-volume-foreground = ${root.foreground}
 
 label-muted = 🔇 muted
@@ -236,33 +236,33 @@ bar-volume-empty = ─
 bar-volume-empty-font = 2
 bar-volume-empty-foreground = ${colors.foreground-alt}
 
-[module/alsa]
-type = internal/alsa
-
-format-volume = <label-volume> <bar-volume>
-label-volume = VOL
-label-volume-foreground = ${root.foreground}
-
-format-muted-prefix = " "
-format-muted-foreground = ${colors.foreground-alt}
-label-muted = sound muted
-
-bar-volume-width = 10
-bar-volume-foreground-0 = #b294ff
-bar-volume-foreground-1 = #b294ff
-bar-volume-foreground-2 = #b294ff
-bar-volume-foreground-3 = #b294ff
-bar-volume-foreground-4 = #b294ff
-bar-volume-foreground-5 = #b294ff
-bar-volume-foreground-6 = #b294ff
-bar-volume-gradient = false
-bar-volume-indicator = |
-bar-volume-indicator-font = 2
-bar-volume-fill = ─
-bar-volume-fill-font = 2
-bar-volume-empty = ─
-bar-volume-empty-font = 2
-bar-volume-empty-foreground = ${colors.foreground-alt}
+;[module/alsa]
+;type = internal/alsa
+;
+;format-volume = <label-volume>
+;label-volume = VOL %percentage%%
+;label-volume-foreground = ${root.foreground}
+;
+;format-muted-prefix = " "
+;format-muted-foreground = ${colors.foreground-alt}
+;label-muted = sound muted
+;
+;bar-volume-width = 10
+;bar-volume-foreground-0 = #b294ff
+;bar-volume-foreground-1 = #b294ff
+;bar-volume-foreground-2 = #b294ff
+;bar-volume-foreground-3 = #b294ff
+;bar-volume-foreground-4 = #b294ff
+;bar-volume-foreground-5 = #b294ff
+;bar-volume-foreground-6 = #b294ff
+;bar-volume-gradient = false
+;bar-volume-indicator = |
+;bar-volume-indicator-font = 2
+;bar-volume-fill = ─
+;bar-volume-fill-font = 2
+;bar-volume-empty = ─
+;bar-volume-empty-font = 2
+;bar-volume-empty-foreground = ${colors.foreground-alt}
 
 [module/battery]
 type = internal/battery
