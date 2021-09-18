@@ -1,7 +1,7 @@
 ! urxvt
 URxvt*buffered: true
 URxvt*cursorBlink: false
-URxvt*underlineColor: #b294bb
+URxvt*underlineColor: #cc6666
 URxvt*font: -*-terminus-*-*-*-*-*-*-*-*-*-*-*-*
 URxvt*borderless: 1
 URxvt*scrollBar: false
@@ -18,7 +18,7 @@ URxvt.internalBorder: 50
 ! special
 *.foreground:   #c5c8c6
 ! *.background:   rgba:3700/3B00/4100/C800
-*.background:   [50]#000000
+*.background:   [60]#000000
 *.cursorColor:  #c5c8c6
 
 ! black

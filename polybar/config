@@ -18,23 +18,24 @@
 
 [colors]
 ;background = ${xrdb:color0:#222}
-background = #00373B41
-background-alt = #b294bb
+background = #aa000000
+background-alt = #81a2be
 ;foreground = ${xrdb:color7:#222}
-foreground = #b294bb
-foreground-alt = #b294bb
-primary = #b294aa
-secondary = #e60053
+foreground = #81a2be
+foreground-alt = #81a2be
+primary = #81a2be
+secondary = #81a2be
 alert = #bd2c40
 
 [bar/bar1]
 bottom = true
+override-redirect = true
 ;monitor = ${env:MONITOR:HDMI-1}
-width = 100%
+width = 95%
 height = 27
-;offset-x = 1%
-;offset-y = 1%
-;radius = 6.0
+offset-x = 2.5%
+offset-y = 0.5%
+radius = 15.0
 fixed-center = false
 
 background = ${colors.background}
@@ -274,7 +275,7 @@ format-charging = <animation-charging> <label-charging>
 format-charging-underline = #b5bd68
 
 format-discharging = <animation-discharging> <label-discharging>
-format-discharging-underline = #cc6666
+format-discharging-underline = #81a2be
 
 format-full-prefix = " "
 format-full-prefix-foreground = ${colors.foreground-alt}
@@ -305,9 +306,9 @@ expand-right = true
 format-spacing = 1
 
 label-open = 
-label-open-foreground = #b294bb
+label-open-foreground = #81a2be
 label-close =  cancel
-label-close-foreground = #b294bb
+label-close-foreground = #81a2be
 label-separator = |
 label-separator-foreground = ${colors.foreground-alt}
 
