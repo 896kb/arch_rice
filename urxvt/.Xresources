@@ -52,3 +52,6 @@ URxvt.internalBorder: 50
 ! white
 *.color7:       #c5c8c6
 *.color15:      #ffffff
+
+! rofi
+rofi.font: -*-terminus-*-*-*-*-*-*-*-*-*-*-*-*
