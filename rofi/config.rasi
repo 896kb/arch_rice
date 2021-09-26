@@ -1,4 +1,4 @@
 configuration {
     theme: "~/.config/rofi/themes/minions.rasi";
-    show-icons: true;
+    // show-icons: true;
 }

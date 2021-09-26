@@ -1,19 +1,32 @@
 * {
-  background-color: #282C3377; 
-  border-color: #2e343f;
-  text-color: #8ca0aa;
-  spacing: 0;
-  width: 100%;
-  height: 100%;
+  background-color: #00000000; 
+  // border-color: #2e343f;
+  text-color: #fff;
+  // spacing: 0;
+  // width: 100%;
+  // height: 100%;
+  // background-image: url("~/.config/rofi/themes/minion.svg", height);
+}
+
+minion {
+  width: 400px;
+  height: 400px;
+  background-image: url("~/.config/rofi/themes/minion.svg", height);
 }
 
 window {
-    padding: 20%;
+  orientation: horizontal;
+  width: 800px;
+  height: 400px;
+  children: [minion, mainbox];
     // background-image: url("~/.config/rofi/themes/minion.png", height);
 }
 
 mainbox {
-    background-image: url("~/.config/rofi/themes/minion.png", height);
+  width: 300px;
+  height: 300px;
+  background-color: #2e343faa;
+  border-radius: 30px;
 }
 
 inputbar {
