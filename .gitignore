@@ -20,3 +20,5 @@
 !rofi/**/*
 !spotify-tui
 !spotify-tui/**/*
+!dunst
+!dunst/**/*

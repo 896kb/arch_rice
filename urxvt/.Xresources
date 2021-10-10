@@ -54,4 +54,4 @@ URxvt.internalBorder: 50
 *.color15:      #ffffff
 
 ! rofi
-rofi.font: -*-terminus-*-*-*-*-*-*-*-*-*-*-*-*
+rofi.font: Misc Tamsyn
