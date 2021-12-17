@@ -36,7 +36,7 @@ exec_always --no-startup-id picom --config ~/.config/picom/picom.conf -b
 
 # Using feh as background
 
-exec_always --no-startup-id feh --bg-fill ~/Downloads/background-3.jpg
+exec_always --no-startup-id feh --bg-fill ~/Downloads/background-4.jpg -bg-fill ~/Downloads/background-4.jpg
 
 # Loading Xresources for xrdb
 
