@@ -24,11 +24,32 @@ font pango:monospace 8
 
 # xss-lock grabs a logind suspend inhibit lock and will use i3lock to lock the
 # screen before suspend. Use loginctl lock-session to lock your screen.
-exec_always --no-startup-id xss-lock --transfer-sleep-lock -- i3lock -i ~/Downloads/background-3.png --nofork
+exec_always --no-startup-id xss-lock --transfer-sleep-lock -- i3lock -t -i ~/Downloads/background-3.png --nofork
 
 # NetworkManager is the most popular way to manage wireless networks on Linux,
 # and nm-applet is a desktop environment-independent system tray GUI for it.
 exec --no-startup-id nm-applet
+
+set $ws1 "1: main"
+set $ws9 "9: mimic instances"
+set $ws10 "10: android instances"
+
+for_window [class="Multilogin *" title="Mimic*"] floating enable
+for_window [class="Multilogin *" title="Mimic*"] move to workspace $ws9
+for_window [class="Multilogin *" title="Mimic*"] resize grow height 1080px
+for_window [class="Multilogin *" title="Mimic*"] resize grow width 1920px
+for_window [class="Multilogin *" title="Mimic*"] move position 0 0
+
+for_window [title="Android Emulator - Pixel*"] floating enable
+for_window [title="Android Emulator - Pixel*"] move to workspace $ws10
+for_window [title="Android Emulator - Pixel*"] resize grow height 200px
+for_window [title="Android Emulator - Pixel*"] resize grow width 40%
+for_window [title="Android Emulator - Pixel*"] move position 0 0
+
+for_window [title="Emulator"] floating enable
+for_window [title="Emulator"] move to workspace $ws10
+for_window [title="Emulator"] resize grow width 40%
+for_window [title="Emulator"] move position 300 300
 
 # Starting picom
 
@@ -36,7 +57,7 @@ exec_always --no-startup-id picom --config ~/.config/picom/picom.conf -b
 
 # Using feh as background
 
-exec_always --no-startup-id feh --bg-fill ~/Downloads/background-3.jpg
+exec_always --no-startup-id feh --bg-fill ~/Downloads/background-5.jpg
 
 # Loading Xresources for xrdb
 

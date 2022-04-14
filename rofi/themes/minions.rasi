@@ -1,19 +1,59 @@
 * {
-  background-color: #282C3377; 
-  border-color: #2e343f;
-  text-color: #8ca0aa;
-  spacing: 0;
-  width: 100%;
-  height: 100%;
+  background-color: #00000000;
+  text-color: #000;
 }
 
 window {
-    padding: 20%;
+  font: "Terminus Bold 15";
+  orientation: horizontal;
+  width: 800;
+  height: 400;
+  children: [minion, mainbox-wrapper];
     // background-image: url("~/.config/rofi/themes/minion.png", height);
 }
 
+mainbox-wrapper {
+  orientation: vertical;
+  spacing: 0;
+  // vertical-align: 1.2;
+  children: [mainbox];
+}
+
+minion {
+  size: 200;
+  background-image: url("~/.config/rofi/themes/minion.svg", height);
+}
+
 mainbox {
-    background-image: url("~/.config/rofi/themes/minion.png", height);
+  background-color: #2196F3cc;
+  border-radius: 30px;
+}
+
+wrapper-mode-switcher {
+  background-color: #000;
+  border-radius: 30px;
+  padding: 30px;
+  width: 300px;
+  height: 50px;
+  orientation: horizontal;
+  children: [mode-switcher];
+}
+
+mode-switcher {
+  width: 100%;
+  horizontal-align: 1;
+  position: center;
+  border:  0px;
+  spacing: 0px;
+  expand: true;
+}
+
+inputbar-wrapper {
+
+}
+
+inputbar-icon {
+  size: 20;
 }
 
 inputbar {
@@ -47,5 +87,5 @@ element {
 }
 
 element selected {
-  background-color: #2e343f;
+  background-color: #FFC006;
 }
