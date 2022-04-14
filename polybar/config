@@ -18,25 +18,24 @@
 
 [colors]
 ;background = ${xrdb:color0:#222}
-background = #aa000000
-background-alt = #81a2be
+background = #1f1f1f
+background-alt = #c0b18b
 ;foreground = ${xrdb:color7:#222}
-foreground = #81a2be
-foreground-alt = #81a2be
-primary = #81a2be
-secondary = #81a2be
+foreground = #c0b18b
+foreground-alt = #c0b18b
+primary = #c0b18b
+secondary = #c0b18b
 alert = #bd2c40
 
 [bar/bar1]
-bottom = true
 override-redirect = true
 wm-restack = i3
 ;monitor = ${env:MONITOR:HDMI-1}
-width = 95%
-height = 27
-offset-x = 2.5%
+width = 95.5%
+height = 30
+offset-x = 2.25%
 offset-y = 0.5%
-radius = 15.0
+radius = 7.0
 fixed-center = false
 
 background = ${colors.background}
@@ -54,7 +53,7 @@ padding-right = 2
 module-margin-left = 1
 module-margin-right = 2
 
-font-0 = Terminus:antialias=false
+font-0 = Terminus
 font-1 = Terminus
 font-2 = Siji
 
@@ -238,33 +237,33 @@ bar-volume-empty = ─
 bar-volume-empty-font = 2
 bar-volume-empty-foreground = ${colors.foreground-alt}
 
-[module/alsa]
-type = internal/alsa
+;[module/alsa]
+;type = internal/alsa
 
-format-volume = <label-volume>
-label-volume = VOL %percentage%%
-label-volume-foreground = ${root.foreground}
+;format-volume = <label-volume>
+;label-volume = VOL %percentage%%
+;label-volume-foreground = ${root.foreground}
 
-format-muted-prefix = " "
-format-muted-foreground = ${colors.foreground-alt}
-label-muted = sound muted
+;format-muted-prefix = " "
+;format-muted-foreground = ${colors.foreground-alt}
+;label-muted = sound muted
 
-bar-volume-width = 10
-bar-volume-foreground-0 = #b294ff
-bar-volume-foreground-1 = #b294ff
-bar-volume-foreground-2 = #b294ff
-bar-volume-foreground-3 = #b294ff
-bar-volume-foreground-4 = #b294ff
-bar-volume-foreground-5 = #b294ff
-bar-volume-foreground-6 = #b294ff
-bar-volume-gradient = false
-bar-volume-indicator = |
-bar-volume-indicator-font = 2
-bar-volume-fill = ─
-bar-volume-fill-font = 2
-bar-volume-empty = ─
-bar-volume-empty-font = 2
-bar-volume-empty-foreground = ${colors.foreground-alt}
+;bar-volume-width = 10
+;bar-volume-foreground-0 = #b294ff
+;bar-volume-foreground-1 = #b294ff
+;bar-volume-foreground-2 = #b294ff
+;bar-volume-foreground-3 = #b294ff
+;bar-volume-foreground-4 = #b294ff
+;bar-volume-foreground-5 = #b294ff
+;bar-volume-foreground-6 = #b294ff
+;bar-volume-gradient = false
+;bar-volume-indicator = |
+;bar-volume-indicator-font = 2
+;bar-volume-fill = ─
+;bar-volume-fill-font = 2
+;bar-volume-empty = ─
+;bar-volume-empty-font = 2
+;bar-volume-empty-foreground = ${colors.foreground-alt}
 
 [module/battery]
 type = internal/battery
@@ -276,11 +275,11 @@ format-charging = <animation-charging> <label-charging>
 format-charging-underline = #b5bd68
 
 format-discharging = <animation-discharging> <label-discharging>
-format-discharging-underline = #81a2be
+format-discharging-underline = #c0b18b
 
 format-full-prefix = " "
 format-full-prefix-foreground = ${colors.foreground-alt}
-format-full-underline = #81a2be
+format-full-underline = #c0b18b
 
 ramp-capacity-0 = 
 ramp-capacity-1 = 
@@ -307,9 +306,9 @@ expand-right = true
 format-spacing = 1
 
 label-open = 
-label-open-foreground = #81a2be
+label-open-foreground = #c0b18b
 label-close =  cancel
-label-close-foreground = #81a2be
+label-close-foreground = #c0b18b
 label-separator = |
 label-separator-foreground = ${colors.foreground-alt}
 
