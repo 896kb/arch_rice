@@ -18,7 +18,5 @@
 !alacritty/**/*
 !rofi
 !rofi/**/*
-!spotify-tui
-!spotify-tui/**/*
 !dunst
 !dunst/**/*
