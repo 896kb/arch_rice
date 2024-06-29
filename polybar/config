@@ -18,24 +18,22 @@
 
 [colors]
 ;background = ${xrdb:color0:#222}
-background = #1f1f1f
-background-alt = #c0b18b
+background = #000000
+background-alt = #000000
 ;foreground = ${xrdb:color7:#222}
-foreground = #c0b18b
-foreground-alt = #c0b18b
-primary = #c0b18b
-secondary = #c0b18b
+foreground = #20c20e
+foreground-alt = #20c20e
+primary = #20c20e
+secondary = #20c20e
 alert = #bd2c40
 
 [bar/bar1]
 override-redirect = true
 wm-restack = i3
-;monitor = ${env:MONITOR:HDMI-1}
-width = 95.5%
+monitor = ${env:MONITOR:DP-4}
+width = 100%
 height = 30
-offset-x = 2.25%
-offset-y = 0.5%
-radius = 7.0
+offset-y = 0
 fixed-center = false
 
 background = ${colors.background}
@@ -53,9 +51,9 @@ padding-right = 2
 module-margin-left = 1
 module-margin-right = 2
 
-font-0 = Terminus
-font-1 = Terminus
-font-2 = Siji
+font-0 = "JetBrains Mono:pixelsize=8;2"
+font-1 = "JetBrains Mono:pixelsize=8;2"
+font-2 = "Siji;2.5"
 
 
 modules-left = bspwm i3
@@ -80,6 +78,7 @@ tray-padding = 2
 cursor-click = pointer
 cursor-scroll = ns-resize
 
+
 [module/xwindow]
 type = internal/xwindow
 label = %title:0:30:...%
@@ -100,7 +99,7 @@ label-mode-background = ${colors.primary}
 ; focused = Active workspace on focused monitor
 label-focused = %index%
 label-focused-background = ${colors.background-alt}
-label-focused-foreground = #373B41
+label-focused-foreground = ${colors.primary}
 label-focused-underline= ${colors.primary}
 label-focused-padding = 2
 
@@ -111,6 +110,7 @@ label-unfocused-padding = 2
 ; visible = Active workspace on unfocused monitor
 label-visible = %index%
 label-visible-background = ${self.label-focused-background}
+label-visible-foreground = #fff
 label-visible-underline = ${self.label-focused-underline}
 label-visible-padding = ${self.label-focused-padding}
 
@@ -306,9 +306,9 @@ expand-right = true
 format-spacing = 1
 
 label-open = 
-label-open-foreground = #c0b18b
+label-open-foreground = #20c20e
 label-close =  cancel
-label-close-foreground = #c0b18b
+label-close-foreground = #ffffff
 label-separator = |
 label-separator-foreground = ${colors.foreground-alt}
 

@@ -211,10 +211,11 @@ mode "resize" {
 }
 
 bindsym $mod+r mode "resize"
-bindsym $mod+c exec loginctl lock-session 1
+bindsym $mod+c exec . /home/radu/.config/i3/i3lock.sh
 
-gaps inner 21
-gaps outer 22
+gaps inner 20
+gaps outer 12
+gaps top 25
 # gaps bottom 0
 
 # Start i3bar to display a workspace bar (plus the system information i3status
@@ -222,6 +223,6 @@ gaps outer 22
 
 for_window [class="^.*"] border pixel 1
 
-client.focused          #c0b18b #c0b18b #c0b18b #c0b18b
+client.focused          #ffffff #ffffff #ffffff #ffffff
 # client.unfocused        #FF000000 #FF000000 #FF000000 #FF000000
 # client.focused_inactive        #FF000000 #FF000000 #FF000000 #FF000000

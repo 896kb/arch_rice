@@ -1,18 +1,18 @@
 font:
   normal:
-    family: Tamzen
-    style: Bold
+    family: Hack
+    style: Regular
 
   bold:
-    family: Tamzen
-    style: Bold
+    family: Hack
+    style: Regular
 
   italic:
-    family: Tamzen
+    family: Hack
     style: Italic
 
   bold_italic:
-    family: Tamzen
+    family: Hack
     style: Bold Italic
 
   size: 10.5
