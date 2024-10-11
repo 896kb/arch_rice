@@ -1,0 +1,56 @@
+[colors.bright]
+black = "#969896"
+blue = "#81a2be"
+cyan = "#8abeb7"
+green = "#b5bd68"
+magenta = "#b294bb"
+red = "#cc6666"
+white = "#ffffff"
+yellow = "#f0c674"
+
+[colors.normal]
+black = "#1d1f21"
+blue = "#81a2be"
+cyan = "#8abeb7"
+green = "#b5bd68"
+magenta = "#b294bb"
+red = "#cc6666"
+white = "#c5c8c6"
+yellow = "#f0c674"
+
+[colors.primary]
+background = "#000000"
+bright_foreground = "#ffffff"
+foreground = "#c5c8c6"
+
+[font]
+size = 5
+
+[font.bold]
+family = "Terminus"
+style = "Bold"
+
+[font.bold_italic]
+family = "Terminus"
+style = "Bold Italic"
+
+[font.italic]
+family = "Terminus"
+style = "Italic"
+
+[font.normal]
+family = "Terminus"
+style = "Regular"
+
+[[keyboard.bindings]]
+action = "SpawnNewInstance"
+key = "Return"
+mods = "Control|Shift"
+
+[window]
+dynamic_padding = true
+opacity = 0.6
+
+[window.padding]
+x = 30
+y = 30

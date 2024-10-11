@@ -36,7 +36,6 @@ width = 95%
 height = 27
 offset-x = 2.5%
 offset-y = 0.5%
-radius = 15.0
 fixed-center = false
 
 background = ${colors.background}
@@ -340,4 +339,3 @@ screenchange-reload = true
 margin-top = 5
 margin-bottom = 5
 
-; vim:ft=dosini
