@@ -31,10 +31,9 @@ alert = #bd2c40
 bottom = true
 override-redirect = true
 wm-restack = i3
-monitor = ${env:MONITOR:DP-2}
-width = 95%
+width = 100%
 height = 27
-offset-x = 2.5%
+offset-x = 0
 offset-y = 0.5%
 fixed-center = false
 
@@ -44,11 +43,11 @@ foreground = ${colors.foreground}
 line-size = 3
 line-color = #f00
 
-border-size = 0
+border-left-size = 48
+border-right-size = 48
 border-color = #00000000
 
 padding-left = 0
-padding-right = 2
 
 module-margin-left = 1
 module-margin-right = 2
@@ -60,7 +59,7 @@ font-2 = Siji
 
 modules-left = bspwm i3
 modules-center = mpd
-modules-right = filesystem xbacklight alsa pulseaudio xkeyboard memory cpu wlan eth battery temperature date powermenu
+modules-right = filesystem xbacklight alsa pulseaudio xkeyboard memory backlight-acpi cpu wlan eth battery temperature date powermenu
 
 tray-position = right
 tray-padding = 2
@@ -305,7 +304,7 @@ expand-right = true
 
 format-spacing = 1
 
-label-open = 
+label-open = ‎‎
 label-open-foreground = #81a2be
 label-close =  cancel
 label-close-foreground = #81a2be
@@ -326,6 +325,7 @@ menu-2-0 = power off
 menu-2-0-exec = poweroff
 menu-2-1 = cancel
 menu-2-1-exec = menu-open-0
+label-padding-right = 2
 
 [settings]
 screenchange-reload = true
