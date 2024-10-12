@@ -57,7 +57,7 @@ font-2 = Font Awesome 5 Brands:pixelsize=12;2
 
 
 modules-left = i3 cpu memory
-modules-center = spotify
+modules-center = spotify spotify-prev spotify-play-pause spotify-next
 modules-right = filesystem xbacklight alsa pulseaudio xkeyboard backlight-acpi wlan eth battery date powermenu
 
 tray-position = right
@@ -345,43 +345,33 @@ screenchange-reload = true
 margin-top = 5
 margin-bottom = 5
 
-[module/previous]
-type = custom/ipc
-format-font = 2
-; Default
-hook-0 = echo ""
-; When spotify active
-hook-1 = echo ""
-click-left = "spotifyctl -q previous"
-
-
-[module/next]
-type = custom/ipc
-format-font = 2
-; Default
-hook-0 = echo ""
-; When spotify active
-hook-1 = echo ""
-click-left = "spotifyctl -q next"
-
-
-[module/playpause]
-type = custom/ipc
-format-font = 2
-; Default
-hook-0 = echo ""
-; Playing
-hook-1 = echo ""
-; Paused
-hook-2 = echo ""
-click-left = "spotifyctl -q playpause"
-
-
 [module/spotify]
+type = custom/script
+tail = true
+interval = 1
+; prefix symbol is shown before the text
+format-prefix = "‎"
+format = <label>
+label-minlen = 30
+label-maxlen = 30
+label-alignment = center
+exec = ~/.config/polybar/scripts/scroll_spotify_status.sh
+
+[module/spotify-prev]
+type = custom/script
+exec = echo ""
+format = <label>
+click-left = playerctl previous -p spotify
+
+[module/spotify-play-pause]
 type = custom/ipc
-label-NAME-minlen = 40
-label-NAME-maxlen = 40
-; Default
-hook-0 = echo ""
-; Playing/paused show song name and artist
-hook-1 = spotifyctl -q status --format '‎%artist%: %title%'
+hook-0 = echo ""
+hook-1 = echo ""
+initial = 1
+click-left = playerctl play-pause -p spotify
+
+[module/spotify-next]
+type = custom/script
+exec = echo ""
+format = <label>
+click-left = playerctl next -p spotify
