@@ -229,7 +229,7 @@ gaps outer 23
 
 
 for_window [class=".*"] border pixel 1
-
+for_window [class="photoshop.exe"] fullscreen enable
 client.focused          #81a2be #81a2be #81a2be #81a2be
 client.unfocused        #FF000000 #FF000000 #FF000000 #FF000000
 client.focused_inactive        #FF000000 #FF000000 #FF000000 #FF000000
