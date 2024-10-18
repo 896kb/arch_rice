@@ -28,5 +28,8 @@
 !.config/dunst/**/*
 !.config/background.jpg
 !.config/background.png
+!.config/nvim
+!.config/nvim/**/*
 !.bashrc
 !.xinitrc
+
