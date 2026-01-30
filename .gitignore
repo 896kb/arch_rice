@@ -20,3 +20,7 @@
 !rofi/**/*
 !spotify-tui
 !spotify-tui/**/*
+!waybar
+!waybar/**/*
+!hypr
+!hypr/**/*
