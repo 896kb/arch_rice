@@ -1,5 +1,0 @@
-// configuration {
-    @theme "~/.config/rofi/themes/minions.rasi"
-    // theme: "~/.config/temporar.rasi";
-    // show-icons: true;
-// }
