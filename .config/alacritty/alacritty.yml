@@ -1,0 +1,55 @@
+font:
+  normal:
+    family: Terminus
+    style: Regular
+
+  bold:
+    family: Terminus
+    style: Bold
+
+  italic:
+    family: Terminus
+    style: Italic
+
+  bold_italic:
+    family: Terminus
+    style: Bold Italic
+
+  size: 5
+
+colors:
+  primary:
+    foreground: '#c5c8c6'
+    background: '#000000'
+    bright_foreground: '#ffffff'
+
+  normal:
+    black:   '#1d1f21'
+    red:     '#cc6666'
+    green:   '#b5bd68'
+    yellow:  '#f0c674'
+    blue:    '#81a2be'
+    magenta: '#b294bb'
+    cyan:    '#8abeb7'
+    white:   '#c5c8c6'
+
+  bright:
+    black:   '#969896'
+    red:     '#cc6666'
+    green:   '#b5bd68'
+    yellow:  '#f0c674'
+    blue:    '#81a2be'
+    magenta: '#b294bb'
+    cyan:    '#8abeb7'
+    white:   '#ffffff'
+
+key_bindings:
+  - { key: Return,   mods: Control|Shift, action: SpawnNewInstance }
+  # - { key: KP_Enter,   mods: Control|Shift, action: SpawnNewInstance }
+
+window:
+  opacity: 0.6
+  padding:
+    x: 30
+    y: 30
+  dynamic_padding: true
