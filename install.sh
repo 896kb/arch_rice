@@ -74,27 +74,32 @@ PACMAN_PACKAGES=(
     "dunst"
     "libnotify"
     
-    # Audio
-    "pulseaudio"
+    # Audio (pipewire assumed already installed)
     "pavucontrol"
     "playerctl"
     "cava"
     
     # Utilities
-    "neofetch"
+    "fastfetch"
     "neovim"
     "tmux"
     "feh"
-    "nitrogen"
     "curl"
     "wget"
     "git"
     "htop"
     "unzip"
-    
+
+    # Wayland session bits (referenced by hyprland.conf exec-once)
+    "swaybg"
+    "swaylock"
+    "hyprpaper"
+    "network-manager-applet"
+    "unclutter"
+
     # Fonts
     "ttf-terminus-nerd"
-    "ttf-font-awesome"
+    "otf-font-awesome"
     "noto-fonts"
     "noto-fonts-emoji"
     
@@ -117,7 +122,8 @@ AUR_PACKAGES=(
     "glava"
     "siji-git"
     "ttf-unifont"
-    "nerd-fonts-complete"
+    "bibata-cursor-theme"   # base for the recolored green cursor (generated below)
+    "wvkbd"                 # on-screen touch keyboard (wvkbd-toggle drives it)
 )
 
 # Install pacman packages
@@ -129,23 +135,24 @@ print_success "Official packages installed"
 
 # Check for AUR helper
 AUR_HELPER=""
-if command -v yay &> /dev/null; then
-    AUR_HELPER="yay"
-elif command -v paru &> /dev/null; then
+if command -v paru &> /dev/null; then
     AUR_HELPER="paru"
+elif command -v yay &> /dev/null; then
+    AUR_HELPER="yay"
 else
-    print_warning "No AUR helper found (yay/paru)"
-    read -p "Install yay? [Y/n] " -n 1 -r
+    print_warning "No AUR helper found (paru/yay)"
+    read -p "Install paru? [Y/n] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-        print_status "Installing yay..."
-        git clone https://aur.archlinux.org/yay.git /tmp/yay
-        cd /tmp/yay
+        print_status "Installing paru..."
+        sudo pacman -S --needed --noconfirm base-devel
+        git clone https://aur.archlinux.org/paru.git /tmp/paru
+        cd /tmp/paru
         makepkg -si --noconfirm
         cd -
-        rm -rf /tmp/yay
-        AUR_HELPER="yay"
-        print_success "yay installed"
+        rm -rf /tmp/paru
+        AUR_HELPER="paru"
+        print_success "paru installed"
     fi
 fi
 
@@ -160,11 +167,6 @@ else
     print_warning "Skipping AUR packages (no AUR helper)"
     print_warning "Install manually: ${AUR_PACKAGES[*]}"
 fi
-
-# Enable services
-print_status "Enabling services..."
-systemctl --user enable --now pulseaudio.service 2>/dev/null || true
-print_success "Services configured"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -253,6 +255,59 @@ for file in "${HOME_FILES[@]}"; do
         print_success "Linked $file -> $dest"
     fi
 done
+
+# Deploy ~/.local/bin scripts (symlinked; PATH picks them up via .bashrc)
+if [ -d "$SCRIPT_DIR/.local/bin" ]; then
+    mkdir -p "$HOME/.local/bin"
+    for f in "$SCRIPT_DIR/.local/bin/"*; do
+        [ -e "$f" ] || continue
+        name="$(basename "$f")"
+        dest="$HOME/.local/bin/$name"
+        if [ -e "$dest" ] && [ ! -L "$dest" ]; then
+            mkdir -p "$BACKUP_DIR"
+            print_warning "Backing up existing $name to $BACKUP_DIR/"
+            mv "$dest" "$BACKUP_DIR/"
+        elif [ -L "$dest" ]; then
+            rm "$dest"
+        fi
+        ln -sf "$f" "$dest"
+        print_success "Linked bin/$name -> $dest"
+    done
+    print_success "Local bin scripts deployed"
+fi
+
+# Deploy ~/.local/share/applications overrides (e.g. steam.desktop: UI on iGPU + 1.25 scaling)
+if [ -d "$SCRIPT_DIR/.local/share/applications" ]; then
+    mkdir -p "$HOME/.local/share/applications"
+    for f in "$SCRIPT_DIR/.local/share/applications/"*; do
+        [ -e "$f" ] || continue
+        ln -sf "$f" "$HOME/.local/share/applications/$(basename "$f")"
+        print_success "Linked applications/$(basename "$f")"
+    done
+fi
+
+# Deploy custom fonts (e.g. BudsExtra.ttf — the waybar earbuds egg glyph) + refresh cache
+if [ -d "$SCRIPT_DIR/.local/share/fonts" ]; then
+    mkdir -p "$HOME/.local/share/fonts"
+    for f in "$SCRIPT_DIR/.local/share/fonts/"*; do
+        [ -e "$f" ] || continue
+        ln -sf "$f" "$HOME/.local/share/fonts/$(basename "$f")"
+    done
+    fc-cache -f "$HOME/.local/share/fonts" >/dev/null 2>&1 || true
+    print_success "Custom fonts linked + font cache refreshed"
+fi
+
+# Generate the green cursor from the installed Bibata (recolor-cursor is pure-stdlib python).
+# The ~40MB recolored theme is kept OUT of git and regenerated here instead.
+if [ -x "$HOME/.local/bin/recolor-cursor" ]; then
+    if [ -d /usr/share/icons/Bibata-Modern-Ice ] || [ -d "$HOME/.local/share/icons/Bibata-Modern-Ice" ]; then
+        "$HOME/.local/bin/recolor-cursor" Bibata-Modern-Ice b5bd68 Bibata-Modern-Green \
+            && print_success "Generated Bibata-Modern-Green cursor" \
+            || print_warning "Cursor recolor failed"
+    else
+        print_warning "Bibata-Modern-Ice not installed; skipping green cursor generation"
+    fi
+fi
 
 # Deploy background images
 if [ -d "$SCRIPT_DIR/.config" ]; then

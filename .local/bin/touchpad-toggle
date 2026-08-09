@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Toggle the ASUS detachable-keyboard touchpad on/off.
+# Bound to the keyboard's touchpad Fn key (sends KEY_F21 -> xkb code:199).
+# Hyprland exposes no readable per-device "enabled" state, so we track it in a flag file.
+DEV="asustek-computer-inc.-n-key-device-touchpad"
+STATE="${XDG_RUNTIME_DIR:-/tmp}/touchpad.off"
+NID=-h string:x-canonical-private-synchronous:touchpad   # replace, don't stack, notifications
+
+if [ -f "$STATE" ]; then
+    hyprctl keyword "device[$DEV]:enabled" true >/dev/null
+    rm -f "$STATE"
+    notify-send -t 1200 $NID "󰟸 Touchpad on"
+else
+    hyprctl keyword "device[$DEV]:enabled" false >/dev/null
+    touch "$STATE"
+    notify-send -t 1200 $NID "󰟸 Touchpad off"
+fi

@@ -34,6 +34,14 @@
 !.config/hypr/**/*
 !.config/background.jpg
 !.config/background.png
+!.local/
+!.local/bin
+!.local/bin/**/*
+!.local/share/
+!.local/share/applications
+!.local/share/applications/**/*
+!.local/share/fonts
+!.local/share/fonts/**/*
 !.bashrc
 !.xinitrc
 !README.md

@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+# Recolor a GRAYSCALE xcursor theme (e.g. Bibata-Modern-Ice) into a new colored theme.
+# Multiplies every pixel's luminance by the target color: white body -> <color>, black
+# outline/shadow stay black, anti-aliasing blends. Works on premultiplied-alpha xcursors.
+# Creates a NEW theme under ~/.local/share/icons (never touches the source / pacman files).
+#   recolor-cursor <src-theme> <hexcolor> <dest-theme>
+#   e.g.  recolor-cursor Bibata-Modern-Ice b5bd68 Bibata-Modern-Green
+import struct, os, sys, shutil
+
+def find_theme(name):
+    if os.path.isdir(name):
+        return name
+    for base in (os.path.expanduser("~/.local/share/icons"),
+                 os.path.expanduser("~/.icons"), "/usr/share/icons"):
+        p = os.path.join(base, name)
+        if os.path.isdir(p):
+            return p
+    return None
+
+def recolor_file(path, color):
+    data = bytearray(open(path, "rb").read())
+    if data[:4] != b"Xcur":
+        return False
+    ntoc = struct.unpack_from("<I", data, 12)[0]
+    off = 16
+    cr, cg, cb = color
+    for _ in range(ntoc):
+        typ, sub, pos = struct.unpack_from("<III", data, off); off += 12
+        if typ != 0xfffd0002:            # only image chunks
+            continue
+        chsz = struct.unpack_from("<I", data, pos)[0]
+        w, h = struct.unpack_from("<II", data, pos + 16)
+        base = pos + chsz
+        for i in range(w * h):
+            o = base + i * 4             # file bytes per pixel: B, G, R, A
+            b, g, r = data[o], data[o+1], data[o+2]
+            lum = (r*299 + g*587 + b*114) // 1000
+            data[o]   = cb * lum // 255
+            data[o+1] = cg * lum // 255
+            data[o+2] = cr * lum // 255
+            # alpha (data[o+3]) untouched
+    open(path, "wb").write(data)
+    return True
+
+def main():
+    if len(sys.argv) != 4:
+        print("usage: recolor-cursor <src-theme> <hexcolor> <dest-theme>", file=sys.stderr)
+        sys.exit(2)
+    src, hexc, dest = sys.argv[1], sys.argv[2].lstrip("#"), sys.argv[3]
+    color = tuple(int(hexc[i:i+2], 16) for i in (0, 2, 4))
+    srcdir = find_theme(src)
+    if not srcdir:
+        print(f"source theme '{src}' not found (install it first)", file=sys.stderr); sys.exit(1)
+    dstdir = os.path.expanduser(f"~/.local/share/icons/{dest}")
+    if os.path.abspath(srcdir) == os.path.abspath(dstdir):
+        print("source and dest resolve to the same dir", file=sys.stderr); sys.exit(1)
+    if os.path.exists(dstdir):
+        shutil.rmtree(dstdir)
+    shutil.copytree(srcdir, dstdir, symlinks=True)      # keep cursor-name symlinks as symlinks
+    cursors = os.path.join(dstdir, "cursors")
+    n = 0
+    for name in os.listdir(cursors):
+        p = os.path.join(cursors, name)
+        if os.path.islink(p) or not os.path.isfile(p):
+            continue
+        try:
+            if recolor_file(p, color): n += 1
+        except Exception as e:
+            print("skip", name, e, file=sys.stderr)
+    idx = os.path.join(dstdir, "index.theme")
+    try:
+        out = []
+        for ln in open(idx).read().splitlines():
+            if ln.startswith("Name="):      ln = f"Name={dest}"
+            elif ln.startswith("Comment="): ln = f"Comment=#{hexc} recolor of {src}"
+            out.append(ln)
+        if not any(l.startswith("Name=") for l in out):
+            out.insert(1, f"Name={dest}")
+        open(idx, "w").write("\n".join(out) + "\n")
+    except Exception:
+        pass
+    print(f"created {dest}: {n} cursors recolored -> {dstdir}")
+
+if __name__ == "__main__":
+    main()

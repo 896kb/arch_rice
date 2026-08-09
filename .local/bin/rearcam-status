@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Waybar custom module: rear-camera bridge state (click toggles it).
+PIDFILE="${XDG_RUNTIME_DIR:-/tmp}/rearcam-bridge.pid"
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; then
+    printf '{"text":"󰄀","class":"on","tooltip":"Rear camera ON — tap to stop"}\n'
+else
+    printf '{"text":"󰄀","class":"off","tooltip":"Rear camera OFF — tap to start"}\n'
+fi

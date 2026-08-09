@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+# Control Xiaomi Buds 6 noise cancelling from Linux. Drops a command for buds-daemon
+# (which owns the control channel) to send. Modes: off / anc / transparency.
+#   buds-anc                -> cycle off -> anc -> transparency -> off
+#   buds-anc anc|off|transparency|0|1|2
+#   buds-anc cycle          -> same as no-arg
+#   buds-anc status         -> print current mode (from the daemon's cache)
+import sys, os, json, time
+
+CMD   = os.path.expanduser("~/.cache/buds-cmd")
+CACHE = os.path.expanduser("~/.cache/buds-battery.json")
+NAMES = {0: "off", 1: "anc", 2: "transparency"}
+VALID = {"cycle","toggle","off","anc","on","nc","transparency","trans","ambient","0","1","2"}
+
+def load():
+    try: return json.load(open(CACHE))
+    except Exception: return {}
+
+def cur_mode():
+    a = load().get("anc")
+    return a if a in (0,1,2) else None
+
+arg = (sys.argv[1] if len(sys.argv) > 1 else "cycle").lower()
+
+if arg in ("status", "get"):
+    m = cur_mode()
+    print(NAMES.get(m, "unknown"))
+    sys.exit(0)
+
+if arg not in VALID:
+    print("usage: buds-anc [off|anc|transparency|cycle|status]", file=sys.stderr)
+    sys.exit(2)
+
+c = load()
+if not c.get("connected"):
+    print("buds not connected (or daemon down)", file=sys.stderr)
+    sys.exit(1)
+
+with open(CMD, "w") as f:
+    f.write(arg)
+
+# brief confirmation: wait for the daemon to apply + cache to update
+before = cur_mode()
+for _ in range(15):
+    time.sleep(0.1)
+    if not os.path.exists(CMD):   # daemon consumed it
+        break
+time.sleep(0.3)
+print(NAMES.get(cur_mode(), "sent"))

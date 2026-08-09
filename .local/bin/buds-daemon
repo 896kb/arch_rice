@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+# Xiaomi Buds 6 listener daemon: holds the control channel, keeps ~/.cache/buds-battery.json
+# updated in near-real-time (L/R every ~10s; case caught the moment the lid reports).
+# Reuses the verified buds-battery core (SAFER+ auth, FE-DC-BA framing, SDP channel).
+# NOTE: while running it OWNS the control channel — the phone can't use it over multipoint.
+import importlib.util, os, socket, time, json, subprocess, atexit, shutil, threading
+
+PIDFILE = os.path.expanduser("~/.cache/buds-daemon.pid")
+def _writepid():
+    os.makedirs(os.path.dirname(PIDFILE), exist_ok=True)
+    with open(PIDFILE, "w") as f: f.write(str(os.getpid()))
+    atexit.register(lambda: os.path.exists(PIDFILE) and os.remove(PIDFILE))
+
+_p = os.path.expanduser("~/.local/bin/buds-battery")
+from importlib.machinery import SourceFileLoader
+from importlib.util import spec_from_loader, module_from_spec
+_loader = SourceFileLoader("budsbattery", _p)
+bb = module_from_spec(spec_from_loader("budsbattery", _loader))
+_loader.exec_module(bb)
+
+MAC   = bb.MAC
+CACHE = os.path.expanduser("~/.cache/buds-battery.json")
+POLL  = 10            # seconds between GET_DEVICE_INFO polls while connected
+NOTIFY_CONFIG = 0xF4  # buds push these (incl. position); MUST be acked or they flood
+ANC_OP  = 0x08        # ambient-sound / noise-cancelling control (set: payload 02 04 <mode>)
+CMDFILE = os.path.expanduser("~/.cache/buds-cmd")   # buds-anc CLI drops a mode here; daemon sends it
+ANC_MAP = {"off":0,"anc":1,"on":1,"nc":1,"transparency":2,"trans":2,"ambient":2,"0":0,"1":1,"2":2}
+OSD   = os.path.expanduser("~/.local/bin/osd")   # generic dunst OSD wrapper (same as fan/kbd OSDs)
+GLYPH = "\U000f184f"                              # nf-md-earbuds — same glyph as the waybar widget
+# mode -> (label, progress value). 3 discrete steps: off / transparency / cancelling.
+ANC_OSD = {0: ("Noise control off", 0), 2: ("Transparency", 50), 1: ("Noise cancelling", 100)}
+_osd = {"t": 0.0, "mode": None}
+def show_anc(mode):
+    if mode not in ANC_OSD: return
+    now = time.time()
+    if mode == _osd["mode"] and now - _osd["t"] < 1.0: return   # dedup check_cmd + 0x0B echo
+    _osd["mode"] = mode; _osd["t"] = now
+    label, val = ANC_OSD[mode]
+    try: subprocess.Popen([OSD, "anc", f"{GLYPH}  {label}", str(val)])
+    except Exception: pass
+
+DEBUG  = bool(os.environ.get("BUDS_DEBUG"))
+DBGLOG = os.path.expanduser("~/.cache/buds-debug.log")
+def dbg(s):
+    if DEBUG:
+        with open(DBGLOG, "a") as f:
+            f.write(f"{time.strftime('%H:%M:%S')} {s}\n")
+
+# --- in-ear auto-pause: control media players via playerctl (MPRIS) ---
+PLAYERCTL = shutil.which("playerctl")
+def run_pctl(args):
+    if PLAYERCTL:
+        try: subprocess.run([PLAYERCTL, *args], capture_output=True, timeout=3)
+        except Exception: pass
+def playing_players():
+    """Names of MPRIS players currently Playing (so we resume exactly those)."""
+    if not PLAYERCTL: return []
+    try:
+        names = subprocess.run([PLAYERCTL, "-l"], capture_output=True, text=True, timeout=3).stdout.split()
+    except Exception:
+        return []
+    out = []
+    for n in names:
+        if n == "playerctld": continue          # proxy, not a real target
+        if player_status(n) == "Playing": out.append(n)
+    return out
+
+def player_status(n):
+    try:
+        return subprocess.run([PLAYERCTL, "-p", n, "status"], capture_output=True, text=True, timeout=3).stdout.strip()
+    except Exception:
+        return ""
+
+def resume_robust(players):
+    """Resume after a reinsert. Reinserting a bud ALSO trips the touch sensor, which
+    fires a stray AVRCP pause ~0.5-1.2s later — so a single Play gets undone. Wait out
+    that tap, then poll and re-assert Play until it stays Playing (or we give up)."""
+    time.sleep(0.9)                                  # let the reinsertion touch-tap land first
+    deadline = time.time() + 3.0
+    stable = 0
+    while time.time() < deadline:
+        if players and all(player_status(n) == "Playing" for n in players):
+            stable += 1
+            if stable >= 2: return                   # Playing for ~0.8s straight -> settled
+        else:
+            for n in players: run_pctl(["-p", n, "play"])
+            stable = 0
+        time.sleep(0.4)
+
+def pause_robust(players):
+    """Pause after a bud is removed. With mpris-proxy routing AVRCP, pulling a bud makes
+    the buds fire a ONE-TIME 'play' (mono keep-playing) that races our pause and wins the
+    first ~100ms. It's not a loop — once that instant passes, pause holds — so poll and
+    re-assert Pause until it stays Paused (or we give up)."""
+    deadline = time.time() + 3.0
+    stable = 0
+    while time.time() < deadline:
+        if players and all(player_status(n) == "Paused" for n in players):
+            stable += 1
+            if stable >= 2: return                   # Paused for ~0.8s straight -> settled
+        else:
+            for n in players: run_pctl(["-p", n, "pause"])
+            stable = 0
+        time.sleep(0.4)
+
+def connected():
+    try:
+        return "Connected: yes" in subprocess.run(
+            ["bluetoothctl","info",MAC], capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return False
+
+def write(d):
+    d["ts"] = int(time.time())
+    os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+    tmp = CACHE + ".tmp"
+    with open(tmp,"w") as f: json.dump(d, f)
+    os.replace(tmp, CACHE)
+
+def session():
+    ch = bb.find_channel() or 29
+    seq = [0]
+    def nxt(): seq[0] = (seq[0]+1) & 0xff; return seq[0]
+    s = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+    s.settimeout(8); s.connect((MAC, ch))
+    s.sendall(bb.encode(bb.PHONE_REQUEST, bb.AUTH_CHALLENGE, nxt(), b"\x01"+os.urandom(16)))
+    buf = bytearray(); authed = False; last_poll = 0.0
+    state = {"left": None, "right": None, "case": None, "pos": None, "anc": None, "connected": True}
+    def flush(): write(dict(state))
+    def check_cmd():
+        # buds-anc CLI writes a mode word/number (or 'cycle') to CMDFILE; send it over our
+        # authenticated channel. 0=off 1=ANC 2=transparency.
+        if not os.path.exists(CMDFILE): return
+        try: c = open(CMDFILE).read().strip().lower()
+        except Exception: c = ""
+        try: os.remove(CMDFILE)
+        except Exception: pass
+        if c in ("cycle", "toggle"):
+            cur = state.get("anc") if state.get("anc") in (0,1,2) else 0
+            mode = (cur + 1) % 3
+        else:
+            mode = ANC_MAP.get(c)
+        if mode is None: return
+        try:
+            s.sendall(bb.encode(bb.PHONE_REQUEST, ANC_OP, nxt(), bytes([0x02, 0x04, mode])))
+            state["anc"] = mode; flush()
+            dbg(f"set ANC mode={mode}")
+            show_anc(mode)
+        except Exception: pass
+    # in-ear auto-pause: 0x04=right worn, 0x08=left worn. Removing a worn bud pauses
+    # whatever was Playing; reinserting resumes it — but only what WE paused, so we
+    # never override a manual pause.
+    pauselog = {"by_us": False, "players": []}
+    def worn_count(p): return 0 if p is None else (bool(p & 0x04) + bool(p & 0x08))
+    def wear(old, new):
+        oc, nc = worn_count(old), worn_count(new)
+        if nc < oc and not pauselog["by_us"]:          # a bud left the ear
+            pls = playing_players()
+            if pls:
+                pauselog["by_us"], pauselog["players"] = True, pls
+                dbg(f"wear auto-pause {pls}")
+                threading.Thread(target=pause_robust, args=(pls,), daemon=True).start()
+        elif nc > oc and pauselog["by_us"]:            # a bud went back in
+            players = pauselog["players"]
+            pauselog["by_us"], pauselog["players"] = False, []
+            dbg(f"wear auto-resume {players}")
+            threading.Thread(target=resume_robust, args=(players,), daemon=True).start()
+    s.settimeout(0.7)   # short so buds-anc commands land within <1s
+    while True:
+        if authed and time.time() - last_poll > POLL:
+            s.sendall(bb.encode(bb.PHONE_REQUEST, bb.GET_DEVICE_INFO, nxt(), b"\xff\xff\xff\xff"))
+            last_poll = time.time()
+        if authed: check_cmd()
+        try:
+            d = s.recv(1024)
+        except socket.timeout:
+            continue
+        if not d:
+            break   # peer closed -> disconnected
+        buf += d
+        msgs, buf = bb.extract(buf)
+        for m in msgs:
+            mt, op, ms, pl = bb.decode(m)
+            dbg(f"op={op:#04x} type={mt:#04x} seq={ms} pl={pl.hex()}")
+            if op == bb.AUTH_CHALLENGE:
+                if mt == bb.RESPONSE:
+                    s.sendall(bb.encode(bb.PHONE_REQUEST, bb.AUTH_CONFIRM, nxt(), b"\x01\x00"))
+                else:
+                    s.sendall(bb.encode(bb.RESPONSE, bb.AUTH_CHALLENGE, ms, b"\x01"+bb.challenge_response(pl[1:17])))
+            elif op == bb.AUTH_CONFIRM and mt != bb.RESPONSE:
+                s.sendall(bb.encode(bb.RESPONSE, bb.AUTH_CONFIRM, ms, b"\x01"))
+                s.sendall(bb.encode(bb.PHONE_REQUEST, bb.GET_DEVICE_INFO, nxt(), b"\xff\xff\xff\xff"))
+                authed = True; last_poll = time.time()
+            elif op == bb.GET_DEVICE_INFO and mt == bb.RESPONSE:
+                b = bb.parse_batt(pl)
+                if b and len(b) == 3:
+                    state["left"], state["right"], state["case"] = bb.comp(b[0]), bb.comp(b[1]), bb.comp(b[2])
+                    flush()
+            elif op == bb.REPORT_STATUS:
+                s.sendall(bb.encode(bb.RESPONSE, bb.REPORT_STATUS, ms, b""))     # ack only (no re-poll -> no flood)
+                if len(pl) >= 4:                    # battery push: index 0x00 -> pl[1:4] = [L, R, case]
+                    state["left"], state["right"], state["case"] = bb.comp(pl[1]), bb.comp(pl[2]), bb.comp(pl[3])
+                    flush()
+            elif op == NOTIFY_CONFIG:
+                s.sendall(bb.encode(bb.RESPONSE, NOTIFY_CONFIG, ms, b""))        # MUST ack or buds flood
+                if len(pl) >= 3 and pl[1] == 0x0C:  # position: [00][0C][bitmask]
+                    old = state["pos"]
+                    state["pos"] = pl[2]
+                    flush()
+                    wear(old, pl[2])   # in-ear auto-pause / resume
+                elif len(pl) >= 3 and pl[1] == 0x0B:  # ANC state: [00][0B][mode][strength], mode 0/1/2
+                    state["anc"] = pl[2]
+                    flush()
+                    show_anc(pl[2])
+    s.close()
+
+def main():
+    _writepid()
+    while True:
+        if not connected():
+            write({"left": None, "right": None, "case": None, "connected": False})
+            time.sleep(5); continue
+        try:
+            session()
+        except Exception:
+            pass
+        write({"left": None, "right": None, "case": None, "connected": False})
+        time.sleep(4)   # buds/channel lost -> back off then retry
+
+if __name__ == "__main__":
+    main()

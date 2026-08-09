@@ -1,0 +1,8 @@
+#!/bin/sh
+# Toggle Xiaomi Buds 6 bluetooth connection (bound to the waybar earbuds button).
+MAC="C4:60:0A:A1:D5:80"
+if bluetoothctl info "$MAC" 2>/dev/null | grep -q "Connected: yes"; then
+    bluetoothctl disconnect "$MAC"
+else
+    bluetoothctl connect "$MAC"
+fi

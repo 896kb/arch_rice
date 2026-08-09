@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# OSD popup whenever the fan/performance profile changes — covers the Fn+F5
+# hardware key (which asusd applies to the platform_profile) and `asusctl profile`.
+# Event-driven: inotifywait fires on the sysfs file (verified it emits MODIFY).
+PP=/sys/firmware/acpi/platform_profile
+OSD="$HOME/.local/bin/osd"
+[ -r "$PP" ] || exit 0
+
+last=$(cat "$PP" 2>/dev/null)
+inotifywait -m -e modify "$PP" 2>/dev/null | while read -r _; do
+    cur=$(cat "$PP" 2>/dev/null)
+    [ -z "$cur" ] && continue
+    [ "$cur" = "$last" ] && continue       # collapse the duplicate MODIFY events
+    last="$cur"
+    case "$cur" in
+        quiet)       name="Quiet" ;;
+        balanced)    name="Balanced" ;;
+        performance) name="Performance" ;;
+        *)           name="$cur" ;;
+    esac
+    "$OSD" fanprofile "󰈐  $name profile"
+done

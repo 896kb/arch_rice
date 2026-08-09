@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Toggle speaker/mic mute + OSD.  Usage: audio-mute sink|source
+OSD="$HOME/.local/bin/osd"
+case "${1:-}" in
+    sink)
+        pactl set-sink-mute @DEFAULT_SINK@ toggle
+        if pactl get-sink-mute @DEFAULT_SINK@ | grep -q yes; then
+            "$OSD" vol "󰝟  Muted" 0
+        else
+            v=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP '\d+(?=%)' | head -1)
+            "$OSD" vol "󰕾  Unmuted ${v}%" "${v:-0}"
+        fi ;;
+    source)
+        pactl set-source-mute @DEFAULT_SOURCE@ toggle
+        if pactl get-source-mute @DEFAULT_SOURCE@ | grep -q yes; then
+            "$OSD" mic "󰍭  Mic muted"
+        else
+            "$OSD" mic "󰍬  Mic on"
+        fi ;;
+    *) echo "usage: audio-mute {sink|source}" >&2; exit 2 ;;
+esac

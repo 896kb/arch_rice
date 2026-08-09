@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+# Persistent bottom-center overlay of the buds-in-case image. Slides up + fades in, HOLDS
+# (cross-fading between the empty/justleft/justright/both images as the daemon's `pos` changes)
+# until SIGTERM/SIGINT, then slides down + fades out. Fully click-through (empty input region).
+import os
+os.environ["GDK_BACKEND"] = "wayland"
+import sys, gi, cairo, signal, json
+gi.require_version("Gtk", "3.0")
+gi.require_version("GtkLayerShell", "0.1")
+from gi.repository import Gtk, Gdk, GdkPixbuf, GtkLayerShell, GLib
+
+CFG   = os.path.expanduser("~/.config/hypr")
+CACHE = os.path.expanduser("~/.cache/buds-battery.json")
+IMAGES = {"both":  CFG + "/buds6.png",
+          "left":  CFG + "/buds6-justleft.png",
+          "right": CFG + "/buds6-justright.png",
+          "empty": CFG + "/buds6-empty.png"}
+DISP = 220; REST_GAP = 40; BOTTOM_MARGIN = 0
+FADE_IN = 350.0; FADE_OUT = 400.0; MORPH = 280.0
+
+pb = {k: GdkPixbuf.Pixbuf.new_from_file(v).scale_simple(DISP, DISP, GdkPixbuf.InterpType.BILINEAR)
+      for k, v in IMAGES.items()}
+W = DISP; H = DISP + REST_GAP
+
+def pick():
+    try:
+        pos = json.load(open(CACHE)).get("pos")
+    except Exception:
+        pos = None
+    if pos is None:
+        return "both"
+    left, right = bool(pos & 0x02), bool(pos & 0x01)   # bit1=left in case, bit0=right in case
+    if left and right: return "both"
+    if left:  return "left"
+    if right: return "right"
+    return "empty"
+
+win = Gtk.Window(); win.set_app_paintable(True); win.set_decorated(False); win.set_accept_focus(False)
+vis = win.get_screen().get_rgba_visual()
+if vis: win.set_visual(vis)
+area = Gtk.DrawingArea(); area.set_size_request(W, H); win.add(area)
+GtkLayerShell.init_for_window(win)
+GtkLayerShell.set_layer(win, GtkLayerShell.Layer.OVERLAY)
+GtkLayerShell.set_namespace(win, "buds-popup")
+GtkLayerShell.set_anchor(win, GtkLayerShell.Edge.BOTTOM, True)
+GtkLayerShell.set_margin(win, GtkLayerShell.Edge.BOTTOM, BOTTOM_MARGIN)
+GtkLayerShell.set_keyboard_mode(win, GtkLayerShell.KeyboardMode.NONE)
+
+st = {"alpha": 0.0, "yoff": float(H), "phase": "in", "t0": None, "out0": None,
+      "cur": pick(), "prev": None, "morph0": None}
+def ein(t):  return t * t
+def eout(t): return 1 - (1 - t) ** 3
+
+def on_draw(_a, cr):
+    cr.set_operator(cairo.OPERATOR_CLEAR); cr.paint()
+    cr.set_operator(cairo.OPERATOR_OVER)
+    a, y = max(0.0, min(1.0, st["alpha"])), st["yoff"]
+    if st["prev"] is not None and st["morph0"] is not None:
+        mt = (GLib.get_monotonic_time() - st["morph0"]) / 1000.0 / MORPH
+        if mt < 1.0:
+            # old stays fully opaque as the base; new fades in on top -> no mid-morph dimming
+            Gdk.cairo_set_source_pixbuf(cr, pb[st["prev"]], 0, y); cr.paint_with_alpha(a)
+            Gdk.cairo_set_source_pixbuf(cr, pb[st["cur"]],  0, y); cr.paint_with_alpha(a * ein(mt))
+            return False
+        st["prev"] = None; st["morph0"] = None      # morph done -> old disappears
+    Gdk.cairo_set_source_pixbuf(cr, pb[st["cur"]], 0, y); cr.paint_with_alpha(a)
+    return False
+area.connect("draw", on_draw)
+
+def tick():
+    now = GLib.get_monotonic_time()
+    if st["t0"] is None: st["t0"] = now
+    ph = st["phase"]
+    if ph == "in":
+        el = (now - st["t0"]) / 1000.0
+        if el >= FADE_IN: st["alpha"] = 1.0; st["yoff"] = 0.0; st["phase"] = "hold"
+        else: t = el / FADE_IN; st["alpha"] = ein(t); st["yoff"] = H * (1 - eout(t))
+    elif ph == "hold":
+        st["alpha"] = 1.0; st["yoff"] = 0.0
+    elif ph == "out":
+        el = (now - st["out0"]) / 1000.0
+        if el >= FADE_OUT: Gtk.main_quit(); return False
+        t = el / FADE_OUT; st["alpha"] = 1.0 - ein(t); st["yoff"] = H * ein(t)
+    area.queue_draw()
+    return True
+
+def poll_state():
+    new = pick()
+    if new != st["cur"] and st["phase"] != "out":
+        st["prev"] = st["cur"]; st["cur"] = new; st["morph0"] = GLib.get_monotonic_time()
+    return True
+
+def start_fadeout():
+    if st["phase"] != "out":
+        st["phase"] = "out"; st["out0"] = GLib.get_monotonic_time()
+    return False
+GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, start_fadeout)
+GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, start_fadeout)
+
+def clickthrough(w):                       # empty input region -> pointer + hover pass through
+    gw = w.get_window()
+    if gw is not None:
+        gw.input_shape_combine_region(cairo.Region(), 0, 0)
+win.connect("realize", clickthrough)
+win.connect("map", clickthrough)
+win.connect("destroy", Gtk.main_quit)
+win.show_all()
+GLib.idle_add(lambda: (clickthrough(win), False)[1])   # re-apply once more after map
+GLib.timeout_add(16, tick)
+GLib.timeout_add(400, poll_state)          # morph as case/bud state changes
+Gtk.main()

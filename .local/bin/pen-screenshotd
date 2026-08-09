@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+"""
+pen-screenshotd — ASUS stylus eraser button -> region screenshot to clipboard.
+
+Hold the eraser (outside Krita / GIMP / PhotoGIMP) and a box is anchored at the
+pen tip; moving the pen grows it; releasing the eraser captures that rectangle
+with grim and copies it via wl-copy.
+
+Position is read from the compositor cursor (`hyprctl cursorpos`), which is in
+logical/layout coordinates and therefore already correct under any screen
+rotation. The selection overlay absorbs pointer input while active, so pressing
+the pen during selection can't click/erase windows underneath.
+"""
+import json
+import subprocess
+import sys
+import os
+import fcntl
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("GtkLayerShell", "0.1")
+from gi.repository import Gtk, GtkLayerShell, GLib
+import cairo
+import evdev
+from evdev import ecodes
+
+STYLUS_MATCH = "Stylus"
+DRAWING_CLASSES = {"org.kde.krita", "gimp"}
+MIN_SIZE = 5
+CAPTURE_DELAY_MS = 120
+POLL_MS = 40
+
+
+def find_stylus():
+    for p in evdev.list_devices():
+        try:
+            d = evdev.InputDevice(p)
+        except Exception:
+            continue
+        if STYLUS_MATCH in d.name and ecodes.BTN_TOOL_RUBBER in d.capabilities().get(ecodes.EV_KEY, []):
+            return d
+    return None
+
+
+def active_class():
+    try:
+        return json.loads(subprocess.check_output(["hyprctl", "activewindow", "-j"], text=True, timeout=1)).get("class", "")
+    except Exception:
+        return ""
+
+
+def cursorpos():
+    try:
+        out = subprocess.check_output(["hyprctl", "cursorpos"], text=True, timeout=1).strip()
+        xs, ys = out.split(",")
+        return float(xs), float(ys)
+    except Exception:
+        return None
+
+
+class Selector:
+    def __init__(self, dev):
+        self.dev = dev
+        self.anchor = None
+        self.cur = None
+        self.active = False
+        self.timer = None
+
+        self.win = Gtk.Window()
+        self.win.set_app_paintable(True)
+        vis = self.win.get_screen().get_rgba_visual()
+        if vis:
+            self.win.set_visual(vis)
+        GtkLayerShell.init_for_window(self.win)
+        GtkLayerShell.set_layer(self.win, GtkLayerShell.Layer.OVERLAY)
+        for edge in (GtkLayerShell.Edge.TOP, GtkLayerShell.Edge.BOTTOM,
+                     GtkLayerShell.Edge.LEFT, GtkLayerShell.Edge.RIGHT):
+            GtkLayerShell.set_anchor(self.win, edge, True)
+        GtkLayerShell.set_exclusive_zone(self.win, -1)
+        GtkLayerShell.set_keyboard_mode(self.win, GtkLayerShell.KeyboardMode.NONE)
+        self.area = Gtk.DrawingArea()
+        self.win.add(self.area)
+        self.area.connect("draw", self.on_draw)
+
+    def rect(self):
+        ax, ay = self.anchor
+        bx, by = self.cur
+        return min(ax, bx), min(ay, by), abs(bx - ax), abs(by - ay)
+
+    def on_draw(self, _area, cr):
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_rgba(0, 0, 0, 0)
+        cr.paint()
+        if not self.active or self.anchor is None or self.cur is None:
+            return
+        alloc = self.win.get_allocation()
+        x, y, w, h = self.rect()
+        cr.set_operator(cairo.OPERATOR_OVER)
+        cr.set_source_rgba(0, 0, 0, 0.30)
+        cr.rectangle(0, 0, alloc.width, alloc.height)
+        cr.fill()
+        cr.set_operator(cairo.OPERATOR_CLEAR)
+        cr.rectangle(x, y, w, h)
+        cr.fill()
+        cr.set_operator(cairo.OPERATOR_OVER)
+        cr.set_source_rgba(0.30, 0.70, 1.0, 0.95)
+        cr.set_line_width(2)
+        cr.rectangle(x, y, w, h)
+        cr.stroke()
+
+    def tick(self):
+        p = cursorpos()
+        if p:
+            self.cur = p
+            self.area.queue_draw()
+        return True
+
+    def on_fd(self, _fd, _cond):
+        try:
+            for ev in self.dev.read():
+                self.handle(ev)
+        except BlockingIOError:
+            pass
+        return True
+
+    def handle(self, ev):
+        if ev.type != ecodes.EV_KEY or ev.code != ecodes.BTN_TOOL_RUBBER:
+            return
+        if ev.value == 1 and not self.active:
+            if active_class() in DRAWING_CLASSES:
+                return
+            p = cursorpos()
+            if not p:
+                return
+            self.anchor = p
+            self.cur = p
+            self.active = True
+            self.win.show_all()
+            self.timer = GLib.timeout_add(POLL_MS, self.tick)
+        elif ev.value == 0 and self.active:
+            self.active = False
+            if self.timer:
+                GLib.source_remove(self.timer)
+                self.timer = None
+            x, y, w, h = self.rect()
+            self.win.hide()
+            if w >= MIN_SIZE and h >= MIN_SIZE:
+                geom = f"{int(x)},{int(y)} {int(w)}x{int(h)}"
+                GLib.timeout_add(CAPTURE_DELAY_MS, self.capture, geom)
+
+    def capture(self, geom):
+        subprocess.Popen(
+            f'grim -g "{geom}" - | wl-copy && '
+            f'notify-send -t 1200 "\U0001F4CB Region copied to clipboard"',
+            shell=True)
+        return False
+
+
+def main():
+    dev = find_stylus()
+    if dev is None:
+        print("pen-screenshotd: stylus not found", file=sys.stderr)
+        sys.exit(1)
+    flags = fcntl.fcntl(dev.fd, fcntl.F_GETFL)
+    fcntl.fcntl(dev.fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+    sel = Selector(dev)
+    GLib.io_add_watch(dev.fd, GLib.IO_IN, sel.on_fd)
+    print(f"pen-screenshotd: watching {dev.name} ({dev.path})", file=sys.stderr)
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main()

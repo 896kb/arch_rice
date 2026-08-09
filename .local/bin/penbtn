@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# ASUS pen top button DOUBLE-click -> summon/dismiss Krita on its own special
+# (scratchpad) workspace. The pen sends a DISTINCT code for double-click
+# (Super+F19 = keycode 197); Hyprland binds SUPER,code:197 directly to this,
+# so no timing detection is needed. Krita is pinned to special:krita by a
+# windowrule in hyprland.conf (its real class is org.kde.krita).
+
+if pgrep -x krita >/dev/null; then
+    # already running -> bring its scratchpad up (or hide if it's showing)
+    hyprctl dispatch togglespecialworkspace krita
+else
+    # launch it; the windowrule drops it on special:krita (silent). Reveal once it maps.
+    hyprctl dispatch exec krita
+    setsid -f bash -c '
+        for _ in $(seq 1 80); do
+            if hyprctl clients | grep -qi "org.kde.krita"; then
+                hyprctl dispatch togglespecialworkspace krita
+                break
+            fi
+            sleep 0.25
+        done' >/dev/null 2>&1
+fi

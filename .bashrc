@@ -13,3 +13,17 @@ source /usr/share/nvm/init-nvm.sh
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH=$BUN_INSTALL/bin:$PATH
+
+# rootless podman docker socket (for Encore and other docker-aware tools)
+export DOCKER_HOST="unix:///run/user/$(id -u)/podman/podman.sock"
+
+# view images inline as colored block/symbol art (works in any terminal, incl. alacritty)
+# usage: img photo.png   |   img *.jpg   |   curl -s URL | img -
+img() { chafa "$@"; }
+
+# personal scripts (~/.local/bin: buds-anc, buds-daemon-toggle, earbuds-status, ...)
+# guarded so re-sourcing can't duplicate the entry
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Re-position and re-rotate any OPEN camera peek widget for eDP-2's current
+# orientation, live (no close/reopen). Called by auto-rotate on every rotation.
+set -u
+
+reorient() {   # $1=title  $2=corner(left|right)  $3=mpv-ipc-socket
+    local title="$1" corner="$2" sock="$3" fs X Y VF
+    # fs = "" not open, "fs" fullscreen, "sm" small
+    fs=$(hyprctl -j clients 2>/dev/null | python3 -c "import json,sys
+m=[c for c in json.load(sys.stdin) if c.get('title')=='$title']
+print('' if not m else ('fs' if m[0].get('fullscreen') else 'sm'))")
+    [ -n "$fs" ] || return 0
+
+    read -r X Y VF < <("$HOME/.local/bin/cam-geometry" "$corner")
+
+    # rotate the live feed (and future captures) via mpv IPC; "" clears filters
+    [ -S "$sock" ] && python3 - "$sock" "$VF" <<'PY' 2>/dev/null
+import socket, json, sys
+sock, vf = sys.argv[1], sys.argv[2]
+try:
+    s = socket.socket(socket.AF_UNIX); s.connect(sock)
+    s.sendall((json.dumps({"command": ["set_property", "vf", vf]}) + "\n").encode())
+    s.close()
+except OSError:
+    pass
+PY
+
+    # reposition (only the small peek; leave a fullscreen one covering the screen)
+    [ "$fs" = sm ] && hyprctl dispatch movewindowpixel "exact $X $Y,title:^(${title})\$" >/dev/null 2>&1
+    return 0
+}
+
+reorient rearcam  right "${XDG_RUNTIME_DIR:-/tmp}/rearcam-mpv.sock"
+reorient frontcam left  "${XDG_RUNTIME_DIR:-/tmp}/frontcam-mpv.sock"

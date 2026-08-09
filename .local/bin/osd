@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Generic on-screen-display popup via dunst.
+#   osd <tag> <summary> [value 0-100]
+# <tag> groups popups so the same category replaces itself instead of stacking,
+# and [value] draws dunst's progress bar.
+tag=${1:?}; summary=${2:?}; value=${3:-}
+args=(-t 1200
+      -h "string:x-dunst-stack-tag:$tag"
+      -h "string:x-canonical-private-synchronous:$tag")
+[ -n "$value" ] && args+=(-h "int:value:$value")
+notify-send "${args[@]}" "$summary" 2>/dev/null

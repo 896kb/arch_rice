@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Copy an image file to the Wayland clipboard. Invoked by mpv (camwidget.lua).
+# mpv's children inherit its open fds — including the camera device — and wl-copy
+# DAEMONIZES while holding them, which pins the camera open even after the widget
+# closes. So close every inherited fd above stderr before handing off to wl-copy.
+f="${1:?usage: cam-clip <image>}"
+[ -s "$f" ] || exit 1
+for link in /proc/$$/fd/*; do
+    n="${link##*/}"
+    if [ "$n" -gt 2 ] 2>/dev/null; then eval "exec ${n}>&-" 2>/dev/null; fi
+done
+wl-copy -t image/png < "$f"
+notify-send -t 1200 -h string:x-dunst-stack-tag:camphoto "󰆏  Copied to clipboard"

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Toggle a camera peek window (by title, $1) between the small pinned peek and
+# fullscreen. Hyprland refuses to fullscreen a *pinned* window, so we unpin on
+# the way in and re-pin on the way out (exiting fullscreen restores the
+# windowrule size/position automatically).
+set -u
+title="${1:?usage: cam-fullscreen <window-title>}"
+sel="title:^(${title})$"
+
+state=$(hyprctl -j clients 2>/dev/null | python3 -c "import json,sys
+for c in json.load(sys.stdin):
+    if c.get('title')=='$title':
+        print('fs' if c.get('fullscreen') else 'sm'); break")
+
+hyprctl dispatch focuswindow "$sel" >/dev/null 2>&1   # fullscreen acts on the active window
+if [ "$state" = fs ]; then
+    hyprctl dispatch fullscreen 0 >/dev/null 2>&1     # leave fullscreen
+    hyprctl dispatch pin "$sel"   >/dev/null 2>&1     # re-pin the small peek
+else
+    hyprctl dispatch pin "$sel"   >/dev/null 2>&1     # unpin so fullscreen is allowed
+    hyprctl dispatch fullscreen 0 >/dev/null 2>&1     # go fullscreen
+fi

@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Accelerometer auto-rotate for the ROG Flow Z13 (Hyprland).
+# Rotates eDP-2 + re-aligns pen/touch + touchscreen gestures to the orientation,
+# but only when the detachable keyboard is unplugged (laptop mode = landscape).
+#
+# Reads orientation from iio-sensor-proxy's D-Bus property. (monitor-sensor's
+# stdout is unreliable on this HID accel, so we only use it to hold a claim.)
+
+# Resolve the internal panel's CURRENT name (kernel updates rename it eDP-1/eDP-2).
+MON=$(hyprctl -j monitors 2>/dev/null | python3 -c 'import json,sys; print(next((m["name"] for m in json.load(sys.stdin) if m["name"].startswith("eDP")), "eDP-1"))')
+MODE="2560x1600@165"
+SCALE=1.25
+KBD="ASUSTeK Computer Inc. N-KEY Device"   # detachable cover; absent when detached
+POLL=0.6
+
+kbd_attached() { grep -q "$KBD" /proc/bus/input/devices; }
+
+# iio-sensor-proxy orientation -> Hyprland transform (0 normal, 1 =90, 2 =180, 3 =270)
+xform() {
+    case "$1" in
+        normal)    echo 0 ;;
+        left-up)   echo 1 ;;
+        right-up)  echo 3 ;;
+        bottom-up) echo 2 ;;
+        *)         echo 0 ;;
+    esac
+}
+
+apply() {  # $1 = transform
+    hyprctl --batch "\
+keyword monitor $MON,$MODE,auto,$SCALE,transform,$1 ; \
+keyword input:touchdevice:output $MON ; \
+keyword input:tablet:output $MON ; \
+keyword input:touchdevice:transform $1 ; \
+keyword input:tablet:transform $1" >/dev/null 2>&1
+    # realign touchscreen gestures (lisgd reads the raw panel, so it needs -o)
+    pkill -x lisgd 2>/dev/null
+    setsid /home/user888/.local/bin/touch-gestures "$1" >/dev/null 2>&1 &
+    # follow rotation live for any open camera peek widgets (reposition + rotate feed)
+    /home/user888/.local/bin/cam-reorient >/dev/null 2>&1 &
+}
+
+orientation() {
+    busctl get-property net.hadess.SensorProxy /net/hadess/SensorProxy \
+        net.hadess.SensorProxy AccelerometerOrientation 2>/dev/null \
+        | grep -oE 'normal|left-up|right-up|bottom-up'
+}
+
+last=""
+while true; do
+    if ! pgrep -x monitor-sensor >/dev/null; then
+        setsid monitor-sensor >/dev/null 2>&1 &
+    fi
+    o=$(orientation)
+    if [ -n "$o" ]; then
+        if kbd_attached; then t=0; else t=$(xform "$o"); fi
+        if [ "$t" != "$last" ]; then last="$t"; apply "$t"; fi
+    fi
+    sleep "$POLL"
+done

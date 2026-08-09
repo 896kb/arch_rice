@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Toggle the IPU6 rear camera into a V4L2 loopback so Chromium/Brave + any V4L2
+# app can use it as a webcam.  rearcam-bridge start|stop|toggle|status
+DEV=/dev/video42
+NODE="libcamera_input.__SB_.PC00.LNK0"
+PIDFILE="${XDG_RUNTIME_DIR:-/tmp}/rearcam-bridge.pid"
+
+is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; }
+
+start() {
+    is_running && { echo running; return 0; }
+    [ -e "$DEV" ] || { notify-send -t 1800 "Rear camera" "loopback $DEV missing"; return 1; }
+    LIBCAMERA_SOFTISP_MODE=cpu setsid gst-launch-1.0 -e \
+        pipewiresrc target-object="$NODE" ! \
+        videoconvert ! videoscale ! "video/x-raw,format=YUY2,width=1280,height=720" ! \
+        v4l2sink device="$DEV" sync=false >/dev/null 2>&1 &
+    echo $! > "$PIDFILE"
+    notify-send -t 1800 "󰄀  Rear camera ON" "Pick 'Rear Camera' in the app"
+    echo started
+}
+
+stop() {
+    is_running && kill "$(cat "$PIDFILE")" 2>/dev/null
+    rm -f "$PIDFILE"
+    notify-send -t 1500 "󰄀  Rear camera OFF"
+    echo stopped
+}
+
+case "${1:-toggle}" in
+    start)  start ;;
+    stop)   stop ;;
+    toggle) is_running && stop || start ;;
+    status) is_running && echo on || echo off ;;
+    *) echo "usage: rearcam-bridge {start|stop|toggle|status}" >&2; exit 2 ;;
+esac

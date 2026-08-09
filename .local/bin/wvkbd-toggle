@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Toggle the on-screen keyboard. Uses the custom-built wvkbd-laptop = real laptop
+# layout: Esc + F1-F12 row, number row 1-0, QWERTY (Tab/Caps/Shift/Enter),
+# Ctrl/Super/Alt/Space + arrows. Swipe a key to reach special/numpad/nav/emoji.
+# Theme: black keys, #ffff78 letters + borders, square corners, no press highlight.
+# (Rebuild from ~/src/wvkbd with: make LAYOUT=laptop  — re-do after wvkbd updates.)
+BIN=/home/user888/.local/bin/wvkbd-laptop
+if pgrep -x wvkbd-laptop >/dev/null; then
+    pkill -x wvkbd-laptop
+else
+    setsid -f "$BIN" -L 360 -R 0 \
+        -l full,special,specialpad,nav,emoji \
+        --landscape-layers full,special,specialpad,nav,emoji \
+        --bg ffff78 --fg 000000 --fg-sp 000000 \
+        --text ffff78 --text-sp ffff78 \
+        --press 000000 --press-sp 000000 \
+        --swipe ffff78 --swipe-sp ffff78
+fi

@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Slide-in rear-camera peek widget.
+# Swipe down from the top-right corner (lisgd) toggles this. It reuses the
+# rearcam-bridge (v4l2loopback /dev/video42) so the camera actually starts,
+# then shows a small pinned mpv window that Hyprland floats/positions/animates
+# via windowrules matching the window title "rearcam".
+#
+# If WE start the bridge we also stop it on close; a bridge already running for
+# Brave (waybar button / Super+Shift+C) is left alone.
+set -u
+DEV=/dev/video42
+BRIDGE="$HOME/.local/bin/rearcam-bridge"
+PIDF="${XDG_RUNTIME_DIR:-/tmp}/rearcam-widget.pid"
+OWNS="${XDG_RUNTIME_DIR:-/tmp}/rearcam-widget.owns-bridge"
+PHOTODIR="$HOME/Documents/Photos/Rear"
+SOCK="${XDG_RUNTIME_DIR:-/tmp}/rearcam-mpv.sock"   # for live re-orientation
+
+widget_running() { [ -f "$PIDF" ] && kill -0 "$(cat "$PIDF" 2>/dev/null)" 2>/dev/null; }
+
+stop() {
+    widget_running && kill "$(cat "$PIDF")" 2>/dev/null
+    rm -f "$PIDF"
+    if [ -f "$OWNS" ]; then "$BRIDGE" stop >/dev/null 2>&1; rm -f "$OWNS"; fi
+}
+
+start() {
+    if [ "$("$BRIDGE" status 2>/dev/null)" != on ]; then
+        "$BRIDGE" start >/dev/null 2>&1
+        touch "$OWNS"
+        # wait for the gstreamer feeder to negotiate a format + push frames,
+        # otherwise mpv opens the loopback before it's streaming and bails
+        for _ in 1 2 3 4 5 6 7 8; do
+            [ "$("$BRIDGE" status 2>/dev/null)" = on ] && break; sleep 0.2
+        done
+        sleep 1.2
+    fi
+    mkdir -p "$PHOTODIR"
+    # position + feed rotation for the current screen orientation (top-right corner)
+    local X Y VF; read -r X Y VF < <("$HOME/.local/bin/cam-geometry" right)
+    hyprctl keyword windowrule "match:title ^(rearcam)\$, move $X $Y" >/dev/null 2>&1
+    local vfarg=(); [ -n "$VF" ] && vfarg=(--vf="$VF")
+    mpv "av://v4l2:$DEV" \
+        "${vfarg[@]}" \
+        --vo=gpu --gpu-api=opengl --gpu-context=wayland \
+        --title=rearcam \
+        --input-ipc-server="$SOCK" \
+        --script="$HOME/.local/bin/camwidget.lua" \
+        --screenshot-directory="$PHOTODIR" \
+        --screenshot-format=jpg --screenshot-jpeg-quality=92 \
+        --screenshot-template=%tY-%tm-%td_%tH-%tM-%tS \
+        --no-audio --no-osc --osd-level=0 \
+        --no-input-default-bindings --input-conf=/dev/null \
+        --profile=low-latency --untimed --really-quiet --no-config \
+        >/dev/null 2>&1 &
+    echo $! > "$PIDF"
+    disown
+}
+
+case "${1:-toggle}" in
+    start)  widget_running || start ;;
+    stop)   stop ;;
+    toggle) if widget_running; then stop; else start; fi ;;
+    *) echo "usage: rearcam-widget {start|stop|toggle}" >&2; exit 2 ;;
+esac

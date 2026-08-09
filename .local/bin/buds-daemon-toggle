@@ -1,0 +1,11 @@
+#!/bin/sh
+# Start/stop the Xiaomi Buds 6 listener daemon. Stop it to free the control channel for the phone.
+PIDFILE="$HOME/.cache/buds-daemon.pid"
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; then
+    kill "$(cat "$PIDFILE")" 2>/dev/null
+    rm -f "$PIDFILE"
+    notify-send -t 2000 "Buds daemon" "stopped — control channel freed for phone" 2>/dev/null || true
+else
+    setsid "$HOME/.local/bin/buds-daemon" >/dev/null 2>&1 &
+    notify-send -t 2000 "Buds daemon" "started — live L/R/case battery" 2>/dev/null || true
+fi

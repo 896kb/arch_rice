@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Echo "<moveX> <moveY> <vf>" to place + rotate a camera peek window for eDP-2's
+# CURRENT orientation.  $1 = corner: "left" (top-left) | "right" (top-right).
+# Window is 320x180 with a 16px margin. <vf> is empty, or an mpv transpose
+# filter that rotates the feed AND the saved/copied photo upright.
+#
+# hyprctl reports the physical mode dims (2560x1600) regardless of transform,
+# so we swap them for the 90/270 transforms to get the logical bounds.
+corner="${1:-left}"
+hyprctl -j monitors 2>/dev/null | CORNER="$corner" python3 -c '
+import json, sys, os
+W, H, M = 320, 180, 16
+corner = os.environ.get("CORNER", "left")
+mon = next((m for m in json.load(sys.stdin) if m["name"].startswith("eDP")), None)
+if not mon:
+    print(M, M, ""); sys.exit()
+tr, mw, mh, sc = mon["transform"], mon["width"], mon["height"], mon["scale"]
+lw, lh = (mh / sc, mw / sc) if tr in (1, 3) else (mw / sc, mh / sc)
+lw, lh = round(lw), round(lh)
+x = (lw - W - M) if corner == "right" else M
+y = M
+# rotate the feed to appear upright for each screen transform. The front camera
+# is mirrored (selfie), which flips the 90deg direction, so it needs the opposite
+# transpose from the rear for the portrait orientations.
+if corner == "right":   # rear
+    vf = {0: "", 1: "transpose=1", 2: "transpose=1,transpose=1", 3: "transpose=2"}.get(tr, "")
+else:                   # front (mirrored)
+    vf = {0: "", 1: "transpose=2", 2: "transpose=1,transpose=1", 3: "transpose=1"}.get(tr, "")
+print(x, y, vf)
+'

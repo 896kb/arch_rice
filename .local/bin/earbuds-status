@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+# Waybar module for Xiaomi Buds 6 — pure reader of ~/.cache/buds-battery.json (updated by
+# buds-daemon). Shows:  L 84% <ear> 79% R   <egg>[ 42%]  — egg gray when case not reporting.
+import json, os, time, subprocess, sys
+
+EAR   = "\U000f184f"   # nf-md-earbuds (Symbols Nerd Font Mono)
+CASE  = "\U0000f3ff"   # custom BudsExtra egg-case glyph
+GRAY  = "#555555"
+CACHE = os.path.expanduser("~/.cache/buds-battery.json")
+MAC   = "C4:60:0A:A1:D5:80"
+
+def emit(o): print(json.dumps(o)); sys.exit(0)
+def pct(x): return "   —" if not x else f"{x['level']:>3}%"   # fixed-width (3 digits + %) to avoid jitter
+def egg_gray(): return f"<span font_family='BudsExtra' color='{GRAY}'>{CASE}</span>"
+def egg_col(p): return f"<span font_family='BudsExtra'>{CASE}</span> {p}%"
+
+def bt_connected():
+    try:
+        return "Connected: yes" in subprocess.run(
+            ["bluetoothctl","info",MAC], capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return False
+
+try:
+    c = json.load(open(CACHE))
+except Exception:
+    c = {}
+fresh = bool(c) and (int(time.time()) - c.get("ts", 0) < 30)
+
+if not fresh:                      # daemon not updating -> simple connection fallback
+    if bt_connected():
+        emit({"text": f"L — {EAR} — R   " + egg_gray(), "class": "on",
+              "tooltip": "Xiaomi Buds 6: connected (listener daemon off — right-click to start)"})
+    emit({"text": f"{EAR}   " + egg_gray(), "class": "off",
+          "tooltip": "Xiaomi Buds 6: disconnected — click to connect"})
+
+if not c.get("connected"):
+    emit({"text": f"{EAR}   " + egg_gray(), "class": "off",
+          "tooltip": "Xiaomi Buds 6: disconnected — click to connect"})
+
+L, R, C = c.get("left"), c.get("right"), c.get("case")
+text = f"L {pct(L)} {EAR} {pct(R)} R   " + (egg_col(C["level"]) if C else egg_gray())
+levels = [x["level"] for x in (L, R) if x]
+cls = "low" if levels and min(levels) < 20 else "on"
+emit({"text": text, "class": cls,
+      "tooltip": f"Left {pct(L)}  ·  Right {pct(R)}  ·  Case {pct(C)}"})

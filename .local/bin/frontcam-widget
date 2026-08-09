@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Slide-in FRONT-camera peek widget (swipe down from the top-LEFT corner).
+# The front cam is a plain USB UVC device, so — unlike the rear cam — there's no
+# v4l2loopback bridge; mpv opens the capture node directly. The node number
+# shuffles across reboots, so we find the colour ("5M", not "IR") node by name.
+# mpv window is titled "frontcam"; Hyprland floats/positions/animates it.
+set -u
+PIDF="${XDG_RUNTIME_DIR:-/tmp}/frontcam-widget.pid"
+PHOTODIR="$HOME/Documents/Photos/Front"
+SOCK="${XDG_RUNTIME_DIR:-/tmp}/frontcam-mpv.sock"   # for live re-orientation
+
+widget_running() { [ -f "$PIDF" ] && kill -0 "$(cat "$PIDF" 2>/dev/null)" 2>/dev/null; }
+
+find_front() {   # echo the front colour-camera /dev/video node
+    local v n
+    for v in /dev/video*; do
+        n=$(cat "/sys/class/video4linux/$(basename "$v")/name" 2>/dev/null)
+        case "$n" in *"UVC WebCam"*) ;; *) continue ;; esac   # the USB webcam
+        printf '%s' "$n" | grep -qi IR && continue            # skip the IR sensor
+        v4l2-ctl -d "$v" --list-formats 2>/dev/null | grep -qiE 'MJPG|YUYV' || continue  # real capture node
+        echo "$v"; return 0
+    done
+    return 1
+}
+
+stop() {
+    if widget_running; then
+        kill "$(cat "$PIDF")" 2>/dev/null
+        "$HOME/.local/bin/osd" frontcam "󰄀  Front camera off"
+    fi
+    rm -f "$PIDF"
+}
+
+start() {
+    local dev; dev=$(find_front) || { "$HOME/.local/bin/osd" frontcam "󰄀  Front camera not found"; exit 1; }
+    mkdir -p "$PHOTODIR"
+    # position + feed rotation for the current screen orientation (top-left corner)
+    local X Y VF; read -r X Y VF < <("$HOME/.local/bin/cam-geometry" left)
+    hyprctl keyword windowrule "match:title ^(frontcam)\$, move $X $Y" >/dev/null 2>&1
+    local vfarg=(); [ -n "$VF" ] && vfarg=(--vf="$VF")
+    # Force MJPG @ 720p30 — the default raw YUYV chokes to ~4fps over USB 2.0
+    mpv "av://v4l2:$dev" \
+        --demuxer-lavf-o=input_format=mjpeg,video_size=1280x720,framerate=30 \
+        "${vfarg[@]}" \
+        --vo=gpu --gpu-api=opengl --gpu-context=wayland \
+        --title=frontcam \
+        --input-ipc-server="$SOCK" \
+        --script="$HOME/.local/bin/camwidget.lua" \
+        --screenshot-directory="$PHOTODIR" \
+        --screenshot-format=jpg --screenshot-jpeg-quality=92 \
+        --screenshot-template=%tY-%tm-%td_%tH-%tM-%tS \
+        --no-audio --no-osc --osd-level=0 \
+        --no-input-default-bindings --input-conf=/dev/null \
+        --profile=low-latency --untimed --really-quiet --no-config \
+        >/dev/null 2>&1 &
+    echo $! > "$PIDF"
+    disown
+    "$HOME/.local/bin/osd" frontcam "󰄀  Front camera on"
+}
+
+case "${1:-toggle}" in
+    start)  widget_running || start ;;
+    stop)   stop ;;
+    toggle) if widget_running; then stop; else start; fi ;;
+    *) echo "usage: frontcam-widget {start|stop|toggle}" >&2; exit 2 ;;
+esac

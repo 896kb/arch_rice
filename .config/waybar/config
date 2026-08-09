@@ -2,13 +2,14 @@
     "layer": "top",
     "position": "bottom",
     "height": 27,
-    "margin-left": 48,
-    "margin-right": 48,
-    "margin-bottom": 5,
-    
+    "margin-left": 20,
+    "margin-right": 20,
+    "margin-bottom": 4,
+    "margin-top": 4,
+
     "modules-left": ["hyprland/workspaces", "custom/cpu", "memory", "custom/gpu", "custom/vram"],
     "modules-center": ["custom/spotify", "custom/spotify-prev", "custom/spotify-play-pause", "custom/spotify-next"],
-    "modules-right": ["disk", "backlight", "pulseaudio", "custom/network", "battery", "clock", "custom/power"],
+    "modules-right": ["custom/rearcam", "custom/earbuds", "disk", "custom/backlight", "pulseaudio", "custom/network", "battery", "clock", "custom/power"],
 
     "hyprland/workspaces": {
         "format": "{id}",
@@ -21,12 +22,12 @@
         "exec": "~/.config/waybar/scripts/cpu-info.sh",
         "return-type": "json",
         "interval": 2,
-        "format": "󰻠 {}"
+        "format": "󰻠 {:>4}"
     },
 
     "memory": {
         "interval": 2,
-        "format": "󰍛 {percentage}%",
+        "format": "󰍛 {percentage:>3}%",
         "tooltip-format": "RAM Usage\n{used:0.1f} / {total:0.1f} GB ({percentage}%)",
         "max-length": 10
     },
@@ -35,29 +36,49 @@
         "exec": "~/.config/waybar/scripts/gpu-usage.sh",
         "return-type": "json",
         "interval": 2,
-        "format": "󰢮 {}"
+        "format": "󰢮 {:>4}"
     },
 
     "custom/vram": {
         "exec": "~/.config/waybar/scripts/gpu-vram.sh",
         "return-type": "json",
         "interval": 2,
-        "format": "󰞯 {}"
+        "format": "󰞯 {:>4}"
     },
 
     "disk": {
         "interval": 30,
-        "format": "󰋊 {percentage_used}%",
+        "format": "󰋊 {percentage_used:>3}%",
         "path": "/"
     },
 
-    "backlight": {
-        "device": "intel_backlight",
-        "format": "󰃞 {percent}%"
+    "custom/backlight": {
+        "exec": "~/.config/waybar/scripts/backlight.sh",
+        "return-type": "json",
+        "interval": 3,
+        "signal": 8,
+        "format": "{}"
+    },
+
+    "custom/rearcam": {
+        "exec": "~/.local/bin/rearcam-status",
+        "return-type": "json",
+        "interval": 2,
+        "on-click": "~/.local/bin/rearcam-bridge toggle",
+        "format": "{}"
+    },
+
+    "custom/earbuds": {
+        "exec": "~/.local/bin/earbuds-status",
+        "return-type": "json",
+        "interval": 3,
+        "on-click": "~/.local/bin/earbuds-toggle",
+        "on-click-right": "~/.local/bin/buds-daemon-toggle",
+        "format": "{}"
     },
 
     "pulseaudio": {
-        "format": "{icon} {volume}%",
+        "format": "{icon} {volume:>3}%",
         "format-muted": "󰝟 muted",
         "format-icons": {
             "default": ["󰕿", "󰖀", "󰕾"]
@@ -79,8 +100,8 @@
             "warning": 30,
             "critical": 15
         },
-        "format": "{icon} {capacity}%",
-        "format-charging": "󰂄 {capacity}%",
+        "format": "{icon} {capacity:>3}%",
+        "format-charging": "󰂄 {capacity:>3}%",
         "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
         "max-length": 25
     },

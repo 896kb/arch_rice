@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Volume rocker mode-switcher for the ROG Flow Z13 (ACRNM / GZ301VIC).
+# keyd turns a both-buttons pinch into F24; this script holds the current
+# mode in a state file and drives volume (pactl) or brightness (logind).
+#
+# Actions:
+#   toggle        flip between volume and brightness mode (+ notification)
+#   up | down     mode-aware: volume OR brightness
+#   bright-up | bright-down   always brightness (for the keyboard Fn keys)
+
+set -u
+STATE="${XDG_RUNTIME_DIR:-/tmp}/rocker.mode"
+mode=$(cat "$STATE" 2>/dev/null || echo volume)
+
+# --- backlight (via logind: no root / no video group needed) ---------------
+BL=$(ls -d /sys/class/backlight/*/ 2>/dev/null | head -1)
+DEV=$(basename "${BL:-none}")
+
+OSD="$HOME/.local/bin/osd"
+
+brightness() {   # $1 = up|down
+    [ -n "${BL:-}" ] || return 0
+    local cur max step new pct
+    cur=$(cat "$BL/brightness"); max=$(cat "$BL/max_brightness")
+    step=$(( max / 20 )); (( step < 1 )) && step=1
+    if [ "$1" = up ]; then new=$(( cur + step )); else new=$(( cur - step )); fi
+    (( new < 1 )) && new=1
+    (( new > max )) && new=$max
+    busctl call org.freedesktop.login1 /org/freedesktop/login1/session/auto \
+        org.freedesktop.login1.Session SetBrightness ssu backlight "$DEV" "$new" >/dev/null
+    pct=$(( new * 100 / max ))
+    "$OSD" bright "󰃞  Brightness ${pct}%" "$pct"
+    pkill -RTMIN+8 -x waybar 2>/dev/null   # refresh the waybar brightness module now
+}
+
+volume() {       # $1 = up|down
+    if [ "$1" = up ]; then pactl set-sink-volume @DEFAULT_SINK@ +10%
+    else pactl set-sink-volume @DEFAULT_SINK@ -10%; fi
+    local v; v=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP '\d+(?=%)' | head -1)
+    if pactl get-sink-mute @DEFAULT_SINK@ | grep -q yes; then
+        "$OSD" vol "󰝟  Muted" "${v:-0}"
+    else
+        "$OSD" vol "󰕾  Volume ${v}%" "${v:-0}"
+    fi
+}
+
+toast() { "$OSD" rocker "$1"; }
+
+case "${1:-}" in
+    toggle)
+        if [ "$mode" = volume ]; then
+            echo brightness >"$STATE"; toast "󰃞  Brightness mode"
+        else
+            echo volume     >"$STATE"; toast "󰕾  Volume mode"
+        fi ;;
+    up)            [ "$mode" = brightness ] && brightness up   || volume up ;;
+    down)          [ "$mode" = brightness ] && brightness down || volume down ;;
+    bright-up)     brightness up ;;
+    bright-down)   brightness down ;;
+    *) echo "usage: rocker {toggle|up|down|bright-up|bright-down}" >&2; exit 2 ;;
+esac

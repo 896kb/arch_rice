@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+# Show the buds6.png overlay (persistent buds-popup) while the CASE is open (daemon reports a
+# case battery), fade it out when the case closes. Replaces the old connect-triggered splash.
+# Requires buds-daemon to be running (it populates ~/.cache/buds-battery.json).
+import time, os, json, subprocess
+
+CACHE = os.path.expanduser("~/.cache/buds-battery.json")
+POPUP = os.path.expanduser("~/.local/bin/buds-popup")
+HIDE_AFTER = 1.5   # seconds the case must stay absent before fading out (debounce)
+
+def case_open():
+    try:
+        c = json.load(open(CACHE))
+    except Exception:
+        return False
+    if time.time() - c.get("ts", 0) > 30:   # cache stale / daemon down
+        return False
+    return bool(c.get("connected") and c.get("case") is not None)
+
+proc = None
+last_present = 0.0
+while True:
+    want = case_open()
+    if want:
+        last_present = time.time()
+    alive = proc is not None and proc.poll() is None
+    if not alive:
+        proc = None
+    if want and proc is None:
+        proc = subprocess.Popen([POPUP])
+    elif proc is not None and not want and time.time() - last_present > HIDE_AFTER:
+        proc.terminate()      # SIGTERM -> popup fades out and exits
+        proc = None
+    time.sleep(1)

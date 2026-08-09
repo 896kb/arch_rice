@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+# Xiaomi Buds 6 per-component battery (Left / Right / Case) over RFCOMM.
+# Reverse-engineered from a btsnoop capture + Gadgetbridge's RedmiBuds protocol:
+#   control service UUID 0xFD2D (channel resolved live via SDP),
+#   FE-DC-BA framing, SAFER+ mutual auth (fixed key), battery = TLV 0x07 [L,R,Case].
+# No root needed. NOTE: the buds allow one control session — if the phone is
+# connected (multipoint) it may hold the channel and this will get refused/reset.
+import socket, struct, os, sys, time, json
+
+MAC = "C4:60:0A:A1:D5:80"
+
+# ---------- SDP: resolve the fd2d control channel (it reassigns per connection) ----------
+def find_channel(uuid16=0xFD2D):
+    ssp  = bytes([0x35,0x03,0x19,(uuid16>>8)&0xff,uuid16&0xff])
+    req  = bytes([0x06])+struct.pack(">H",1)+struct.pack(">H",len(ssp)+2+7+1)+ssp+b"\xff\xff"+bytes([0x35,0x05,0x0A,0x00,0x00,0xFF,0xFF])+b"\x00"
+    s = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_SEQPACKET, socket.BTPROTO_L2CAP)
+    s.settimeout(6); s.connect((MAC,1)); s.send(req); r = s.recv(8192); s.close()
+    for i in range(len(r)-4):
+        if r[i]==0x19 and r[i+1]==0x00 and r[i+2]==0x03 and r[i+3]==0x08:
+            return r[i+4]
+    return None
+
+# ---------- SAFER+ auth (Gadgetbridge Authentication.java / AuthData.java) ----------
+SEQ = bytes([0x11,0x22,0x33,0x33,0x22,0x11,0x11,0x22,0x33,0x33,0x22,0x11,0x11,0x22,0x33,0x33])
+COEFF = [[2,1,1,1,4,2,1,1,2,2,4,2,4,4,16,8],[2,1,1,1,4,2,1,1,1,1,2,1,2,2,8,4],
+ [1,1,4,2,2,2,4,2,16,8,4,4,2,1,1,1],[1,1,4,2,1,1,2,1,8,4,2,2,2,1,1,1],
+ [16,8,2,2,4,2,4,4,1,1,4,2,1,1,2,1],[8,4,1,1,2,1,2,2,1,1,4,2,1,1,2,1],
+ [2,2,4,2,4,4,16,8,2,1,1,1,4,2,1,1],[1,1,2,1,2,2,8,4,2,1,1,1,4,2,1,1],
+ [4,2,4,4,16,8,2,2,1,1,2,1,1,1,4,2],[2,1,2,2,8,4,1,1,1,1,2,1,1,1,4,2],
+ [4,4,16,8,1,1,2,1,4,2,1,1,4,2,2,2],[2,2,8,4,1,1,2,1,4,2,1,1,2,1,1,1],
+ [1,1,2,1,1,1,4,2,4,4,16,8,2,2,4,2],[1,1,2,1,1,1,4,2,2,2,8,4,1,1,2,1],
+ [4,2,1,1,2,1,1,1,4,2,2,2,16,8,4,4],[4,2,1,1,2,1,1,1,2,1,1,1,8,4,2,2]]
+PATTERN=0x9999; BS=16
+expTab=[0 if i==128 else pow(45,i,257) for i in range(256)]
+logTab=[0]*256; logTab[0]=128
+for i in range(1,256):
+    me=pow(45,i,257)
+    if me!=256: logTab[me]=i
+bias=[[0]*16 for _ in range(16)]
+for i in range(16):
+    for j in range(16):
+        o=pow(45,pow(45,17*(i+2)+(j+1),257),257); bias[i][j]=0 if o==256 else o
+def key_schedule(ch):
+    k0=bytearray(ch); k0[15]^=6; keys=[bytes(k0)]; reg=list(k0)
+    x=0
+    for b in k0: x^=b
+    reg.append(x)
+    for ki in range(1,17):
+        for i in range(17): reg[i]=((reg[i]>>5)|(reg[i]<<3))&0xff
+        keys.append(bytes((reg[(ki+i)%17]+bias[ki-1][i])&0xff for i in range(16)))
+    return keys
+def encrypt(pt,keys):
+    ct=bytearray(pt)
+    for r in range(8):
+        if r==2:
+            for i in range(BS): ct[i]=(ct[i]^pt[i]) if (1<<i)&PATTERN else (ct[i]+pt[i])&0xff
+        for i in range(BS): ct[i]=(ct[i]^keys[2*r][i]) if (1<<i)&PATTERN else (ct[i]+keys[2*r][i])&0xff
+        for i in range(BS): ct[i]=expTab[ct[i]&0xff] if (1<<i)&PATTERN else logTab[ct[i]&0xff]
+        for i in range(BS): ct[i]=(keys[2*r+1][i]+ct[i])&0xff if (1<<i)&PATTERN else (keys[2*r+1][i]^ct[i])
+        cp=bytes(ct)
+        for i in range(BS):
+            s=0
+            for j in range(BS): s=(s+COEFF[i][j]*cp[j])&0xff
+            ct[i]=s
+    for i in range(BS): ct[i]=(keys[16][i]^ct[i]) if (1<<i)&PATTERN else (keys[16][i]+ct[i])&0xff
+    return bytes(ct)
+def challenge_response(c): return encrypt(SEQ,key_schedule(c))
+
+# ---------- framing (Message.java) ----------
+HDR=b"\xfe\xdc\xba"; PHONE_REQUEST=0xC4; RESPONSE=0x04
+AUTH_CHALLENGE=0x50; AUTH_CONFIRM=0x51; GET_DEVICE_INFO=0x02; REPORT_STATUS=0x0E
+def encode(mt,op,seq,pl=b""):
+    is_req=(mt&0x40)!=0; size=1 if is_req else 2; plen=len(pl)+size
+    o=bytearray(HDR); o+=bytes([mt,op,(plen>>8)&0xff,plen&0xff])
+    if not is_req: o.append(0)
+    o.append(seq&0xff); o+=pl; o.append(0xEF); return bytes(o)
+def decode(m):
+    mt,op=m[3],m[4]; is_req=(mt&0x40)!=0; poff=3+(5 if is_req else 6)
+    return mt,op,m[poff-1],(m[poff:-1] if m[-1]==0xEF else m[poff:])
+def extract(buf):
+    out=[]
+    while True:
+        h=buf.find(HDR)
+        if h<0 or len(buf)<h+7: break
+        total=((buf[h+5]<<8)|buf[h+6])+8
+        if len(buf)<h+total: break
+        out.append(buf[h:h+total]); buf=buf[h+total:]
+    return out,buf
+def parse_batt(pl):
+    i=0
+    while i<len(pl):
+        if pl[i+1]==0x07: return pl[i+2:i+5]   # TLV index 0x07 -> [Left,Right,Case]
+        i+=pl[i]+1
+    return None
+
+def read():
+    ch=find_channel() or 29
+    seq=[0]
+    def nxt(): seq[0]=(seq[0]+1)&0xff; return seq[0]
+    s=socket.socket(socket.AF_BLUETOOTH,socket.SOCK_STREAM,socket.BTPROTO_RFCOMM)
+    s.settimeout(6); s.connect((MAC,ch))
+    s.sendall(encode(PHONE_REQUEST,AUTH_CHALLENGE,nxt(),b"\x01"+os.urandom(16)))
+    buf=bytearray(); s.settimeout(2.5); end=time.time()+8; batt=None
+    while time.time()<end and batt is None:
+        try: d=s.recv(1024)
+        except socket.timeout:
+            if not buf: continue
+            d=b""
+        buf+=d; msgs,buf=extract(buf)
+        for m in msgs:
+            mt,op,ms,pl=decode(m)
+            if op==AUTH_CHALLENGE:
+                if mt==RESPONSE: s.sendall(encode(PHONE_REQUEST,AUTH_CONFIRM,nxt(),b"\x01\x00"))
+                else: s.sendall(encode(RESPONSE,AUTH_CHALLENGE,ms,b"\x01"+challenge_response(pl[1:17])))
+            elif op==AUTH_CONFIRM and mt!=RESPONSE:
+                s.sendall(encode(RESPONSE,AUTH_CONFIRM,ms,b"\x01"))
+                s.sendall(encode(PHONE_REQUEST,GET_DEVICE_INFO,nxt(),b"\xff\xff\xff\xff"))
+            elif op==GET_DEVICE_INFO and mt==RESPONSE:
+                b=parse_batt(pl)
+                if b and len(b)==3: batt=b
+    s.close()
+    return batt
+
+def comp(x):
+    if x==0xff: return None
+    return {"level":x&0x7f,"charging":bool(x&0x80)}
+
+def main():
+    fmt = sys.argv[1] if len(sys.argv)>1 else "--text"
+    try:
+        b=read()
+    except Exception as e:
+        if fmt=="--json": print(json.dumps({"text":"󰋎","class":"error","tooltip":f"buds: {e}"}))
+        else: print(f"error: {e}", file=sys.stderr)
+        sys.exit(1)
+    if not b:
+        if fmt=="--json": print(json.dumps({"text":"󰋎","class":"off","tooltip":"buds: no battery data"}))
+        else: print("no battery data (buds connected? phone BT off?)", file=sys.stderr)
+        sys.exit(1)
+    L,R,C = comp(b[0]),comp(b[1]),comp(b[2])
+    def s(x): return "—" if x is None else f"{x['level']}%{'⚡' if x['charging'] else ''}"
+    if fmt=="--raw":
+        print(json.dumps({"left":L,"right":R,"case":C}))
+    elif fmt=="--json":
+        print(json.dumps({"text":f"L{s(L)} R{s(R)}","tooltip":f"Left {s(L)} · Right {s(R)} · Case {s(C)}","class":"on"}))
+    else:
+        print(f"Left {s(L)}   Right {s(R)}   Case {s(C)}")
+
+if __name__=="__main__": main()

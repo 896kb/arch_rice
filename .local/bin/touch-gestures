@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Touchscreen gestures via lisgd (works when the keyboard/touchpad is detached).
+#   3-finger swipe UP               ->  toggle the on-screen keyboard
+#   1-finger swipe DOWN @ top-right ->  toggle the rear-camera peek widget
+#   1-finger swipe DOWN @ top-left  ->  toggle the front-camera peek widget
+# Arg $1 = orientation (0-3, number of 90-deg rotations) so gestures follow
+# screen rotation; the auto-rotate daemon restarts this with the right value.
+ORIENT="${1:-0}"
+
+# Find the ELAN multitouch touchscreen by EXACT name. The event number is not
+# stable across reboots, and the /dev/input/by-path symlink can point at the
+# wrong ELAN sub-device, so match the bare "ELAN9008..." name (no Stylus/UNKNOWN).
+ev=$(grep -A6 'N: Name="ELAN9008:00 04F3:41EB"$' /proc/bus/input/devices | grep -oE 'event[0-9]+' | head -1)
+DEV="/dev/input/$ev"
+
+exec lisgd -d "$DEV" -o "$ORIENT" \
+    -g "3,DU,*,*,R,$HOME/.local/bin/wvkbd-toggle" \
+    -g "1,UD,TR,*,R,$HOME/.local/bin/rearcam-widget toggle" \
+    -g "1,UD,TL,*,R,$HOME/.local/bin/frontcam-widget toggle"

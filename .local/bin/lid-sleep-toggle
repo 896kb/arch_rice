@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Toggle "suspend when the lid closes" (bound to Fn+F12).
+#   (no arg)  -> toggle + OSD, and persist the choice to $STATE
+#   restore   -> re-apply the persisted choice at login (no OSD)   [exec-once]
+# OFF holds a logind inhibitor (handle-lid-switch, block mode) so closing the lid stays
+# awake. ON releases it (logind suspends on lid close as usual). No sudo.
+PIDFILE="$HOME/.cache/lid-sleep-inhibit.pid"
+STATE="$HOME/.config/lid-sleep"          # persisted desired state: "off" or "on"
+OSD="$HOME/.local/bin/osd"
+GLYPH=$'\U000f0322'                        # nf-md-laptop
+
+running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; }
+
+start_inhibit() {
+    running && return
+    systemd-inhibit --what=handle-lid-switch --mode=block \
+        --who="lid-sleep-toggle" --why="lid sleep disabled by user" \
+        sleep infinity >/dev/null 2>&1 &
+    echo $! > "$PIDFILE"
+}
+stop_inhibit() {
+    [ -f "$PIDFILE" ] || return
+    local pid; pid=$(cat "$PIDFILE")
+    pkill -P "$pid" 2>/dev/null           # kill the held 'sleep' child (by ppid, not name)
+    kill "$pid" 2>/dev/null               # release the inhibitor
+    rm -f "$PIDFILE"
+}
+
+case "${1:-toggle}" in
+    restore)                               # login: silently re-apply persisted state
+        [ "$(cat "$STATE" 2>/dev/null)" = "off" ] && start_inhibit
+        ;;
+    *)                                     # toggle + notify + persist
+        if running; then
+            stop_inhibit; echo on > "$STATE"
+            "$OSD" lidsleep "$GLYPH  Lid sleep  on"
+        else
+            start_inhibit; echo off > "$STATE"
+            "$OSD" lidsleep "$GLYPH  Lid sleep  off"
+        fi
+        ;;
+esac
