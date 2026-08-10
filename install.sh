@@ -117,7 +117,8 @@ PACMAN_PACKAGES=(
 
     # --- Flow Z13 / Hyprland-Wayland additions ---
     "wofi"                        # app launcher ($menu in hyprland.conf)
-    "hyprlock"                    # lock screen
+    "hyprlock"                    # styled lock screen
+    "hypridle"                    # idle daemon: locks before sleep (password on wake) + dpms
     "grim"                        # screenshots (pen-screenshotd, camera widgets)
     "slurp"                       # region select
     "wl-clipboard"                # wl-copy (cam-clip)
