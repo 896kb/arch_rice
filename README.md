@@ -57,12 +57,13 @@ cd ~/arch_rice
 ./install.sh
 ```
 
-`install.sh` installs the pacman + AUR packages, backs up any existing configs to `~/.config-backup-*`, then symlinks: the `.config/` dirs, home files (`.bashrc`, `.xinitrc`), **every file in `.local/bin/`**, `.local/share/applications/*` (Steam override) and `.local/share/fonts/*` (+ `fc-cache`), and finally **regenerates the green cursor** (`Bibata-Modern-Green`) from the installed Bibata.
+`install.sh`:
 
-**System tweaks** under `system/` are applied by hand, e.g. the volume-rocker remap:
-```bash
-sudo cp system/keyd-default.conf /etc/keyd/default.conf && sudo systemctl restart keyd
-```
+- **Packages** — the Hyprland/Wayland tooling and Flow Z13 hardware deps: `wofi`, `hyprlock`, `grim`/`slurp`/`wl-clipboard`, `mpv`, `iio-sensor-proxy` (auto-rotate), `keyd` (volume rocker), `v4l2loopback-dkms` (rear-cam bridge), `bluez`/`bluez-utils`, the GTK layer-shell python stack (`gtk-layer-shell`, `python-gobject/-cairo/-evdev`), nerd-font symbols; and from the AUR: `wvkbd` (on-screen keyboard), `lisgd` (gestures), `light` (rocker brightness), `asusctl`, `bibata-cursor-theme`.
+- **Deploy** — backs up existing configs to `~/.config-backup-*`, then symlinks the `.config/` dirs, home files (`.bashrc`, `.xinitrc`), **every file in `.local/bin/`**, `.local/share/applications/*` (Steam override) and `.local/share/fonts/*` (+ `fc-cache`).
+- **Generate/enable** — regenerates the green cursor (`Bibata-Modern-Green`) from Bibata; deploys `system/keyd-default.conf` → `/etc/keyd/`; enables `keyd`, `bluetooth`, and the `mpris-proxy` user service.
+
+Other `system/` reference tweaks (not auto-applied) are applied by hand as needed.
 
 ## Fonts
 
@@ -82,15 +83,39 @@ Tomorrow Night, with **green `#b5bd68`** as the everywhere-accent (waybar, curso
 
 ## Keybindings
 
-Full set in `.config/hypr/hyprland.conf` (83 binds). Notable hardware/custom ones:
+Window-management binds (focus / move / resize / workspaces / submaps) live in `.config/hypr/hyprland.conf` (83 binds). The hardware, function-row and pen mappings:
 
+### Function row & media keys
 | key | action |
 |-----|--------|
-| `Fn+F5` | fan/performance profile (asusd) + OSD |
+| mute / mic-mute *(F-row)* | `audio-mute sink` / `audio-mute source` |
+| volume down / up *(F-row)* | `rocker down` / `rocker up` |
+| play-pause / prev / next | `playerctl play-pause` / `previous` / `next` |
+| `Fn+F5` | fan / performance profile (asusd) + OSD |
+| `Fn+F7` / `Fn+F8` *(brightness keys)* | keyboard backlight down / up |
+| touchpad key *(Fn+F6, KEY_F21)* | toggle the detachable-keyboard touchpad |
 | `Fn+F11` | sleep (logind) |
-| `Fn+F12` | toggle **suspend on lid close** (+ notification, persistent) |
-| volume rocker | volume / brightness (keyd → `rocker`) |
-| `Super+D` | rofi/wofi launcher · `Super+P` emoji picker |
+| `Fn+F12` | toggle **suspend on lid close** (+ OSD, persistent) |
+
+### Volume rocker (side buttons — keyd)
+| input | action |
+|-------|--------|
+| rocker up / down | volume **or** screen brightness (mode-dependent) — `rocker` |
+| rocker both-press *(→ F24)* | switch rocker mode |
+
+### ASUS pen
+| input | action |
+|-------|--------|
+| top button **double-click** *(Super + code:197)* | summon / dismiss **Krita** on its scratchpad workspace — `penbtn` |
+| eraser-region press | region screenshot daemon — `pen-screenshotd` |
+
+### Launchers / misc
+| key | action |
+|-----|--------|
+| `Super+D` | app launcher (wofi) |
+| `Super+P` | emoji picker |
+| `Super+R` | resize submap |
+| `Alt+Space` | Claude Desktop |
 
 ## Credits
 

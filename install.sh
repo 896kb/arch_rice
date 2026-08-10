@@ -114,6 +114,31 @@ PACMAN_PACKAGES=(
     "bc"
     "lm_sensors"
     "wireless_tools"
+
+    # --- Flow Z13 / Hyprland-Wayland additions ---
+    "wofi"                        # app launcher ($menu in hyprland.conf)
+    "hyprlock"                    # lock screen
+    "grim"                        # screenshots (pen-screenshotd, camera widgets)
+    "slurp"                       # region select
+    "wl-clipboard"                # wl-copy (cam-clip)
+    "mpv"                         # camera peek widgets
+    "chafa"                       # inline terminal image viewer (img() in .bashrc)
+    "brightnessctl"               # backlight control
+    # hardware
+    "iio-sensor-proxy"            # accelerometer -> auto-rotate / device rotation
+    "keyd"                        # volume-rocker key remap (config deployed from system/)
+    "v4l2loopback-dkms"           # rear IPU6 camera -> browser loopback (rearcam-bridge)
+    "linux-headers"               # build the v4l2loopback dkms module
+    # bluetooth earbuds + AVRCP<->MPRIS bridge
+    "bluez"
+    "bluez-utils"                 # bluetoothctl + mpris-proxy (buds single-tap fix)
+    # GTK layer-shell python stack (buds popups, ANC OSD)
+    "gtk-layer-shell"
+    "python-gobject"
+    "python-cairo"
+    "python-evdev"                # pen-screenshotd
+    # fonts
+    "ttf-nerd-fonts-symbols-mono" # nf-md glyphs used across waybar / OSDs
 )
 
 # AUR packages
@@ -124,6 +149,9 @@ AUR_PACKAGES=(
     "ttf-unifont"
     "bibata-cursor-theme"   # base for the recolored green cursor (generated below)
     "wvkbd"                 # on-screen touch keyboard (wvkbd-toggle drives it)
+    "asusctl"               # fan/perf profile + keyboard-backlight LEDs (also in the g14 repo, faster if enabled)
+    "lisgd"                 # touchscreen edge gestures (touch-gestures)
+    "light"                 # backlight control for the volume-rocker brightness mode (rocker)
 )
 
 # Install pacman packages
@@ -321,6 +349,23 @@ if [ -d "$SCRIPT_DIR/.config" ]; then
 fi
 
 print_success "Config files deployed"
+
+# --- system services + tweaks (Flow Z13) ---
+print_status "Configuring system services..."
+
+# keyd: volume-rocker / brightness key remap (config tracked in system/)
+if [ -f "$SCRIPT_DIR/system/keyd-default.conf" ]; then
+    sudo mkdir -p /etc/keyd && sudo cp "$SCRIPT_DIR/system/keyd-default.conf" /etc/keyd/default.conf
+    sudo systemctl enable --now keyd.service 2>/dev/null && print_success "keyd (volume rocker) enabled"
+fi
+
+# bluetooth (earbuds) + AVRCP<->MPRIS bridge (single-tap play/pause on the buds)
+sudo systemctl enable --now bluetooth.service 2>/dev/null && print_success "bluetooth enabled"
+systemctl --user enable --now mpris-proxy.service 2>/dev/null && print_success "mpris-proxy (user) enabled"
+
+# iio-sensor-proxy is dbus-activated (auto-rotate uses it). NOTE: on this device it can hang
+# suspend in D-state — the fix is a systemd system-sleep hook (see the suspend notes), not here.
+print_success "System services configured"
 
 echo ""
 print_success "Installation complete!"
