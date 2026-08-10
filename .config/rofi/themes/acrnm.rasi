@@ -1,0 +1,83 @@
+* {
+  background-color: #00000000;
+  text-color: #ffffff;
+  accent: #bd2c40;
+  bg-deep: #000000;
+  bg-soft: #0a0a0a;
+  bg-line: #1a1a1a;
+  dim: #555555;
+}
+
+window {
+  font: "Departure Mono 11";
+  orientation: horizontal;
+  width: 600;
+  height: 400;
+  children: [logo, mainbox-wrapper];
+}
+
+logo {
+  expand: false;
+  width: 100;
+  background-image: url("~/.config/rofi/themes/acrnm-vert.png", width);
+  padding: 0;
+}
+
+mainbox-wrapper {
+  expand: true;
+  orientation: vertical;
+  spacing: 0;
+  children: [mainbox];
+}
+
+mainbox {
+  background-color: @bg-soft;
+  padding: 16px;
+  spacing: 12px;
+  children: [inputbar, listview];
+  border: 1px;
+  border-color: @bg-line;
+}
+
+inputbar {
+  background-color: @bg-deep;
+  border: 0 0 1px 0;
+  border-color: @bg-line;
+  padding: 8px 12px;
+  spacing: 8px;
+  children: [prompt, entry];
+}
+
+prompt {
+  text-color: @accent;
+  padding: 0 8px 0 0;
+}
+
+entry {
+  text-color: #ffffff;
+  placeholder: "search //";
+  placeholder-color: @dim;
+}
+
+listview {
+  cycle: false;
+  scrollbar: false;
+  spacing: 2px;
+  background-color: @bg-soft;
+}
+
+element {
+  padding: 6px 12px;
+  background-color: transparent;
+  text-color: #ffffff;
+}
+
+element selected {
+  background-color: @accent;
+  text-color: #000000;
+}
+
+element-text {
+  background-color: transparent;
+  text-color: inherit;
+}

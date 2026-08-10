@@ -1,0 +1,35 @@
+#!/usr/bin/bash
+# Apply CPU power tuning. Called by asusd's ac_command / bat_command.
+# Usage: cpu-tune [ac|bat|auto]   (auto = detect from /sys)
+
+set -e
+
+PSTATE=/sys/devices/system/cpu/intel_pstate
+RAPL=/sys/class/powercap/intel-rapl-mmio/intel-rapl-mmio:0
+
+mode="${1:-auto}"
+if [ "$mode" = "auto" ]; then
+  mode=bat
+  for f in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online; do
+    [ -f "$f" ] && [ "$(cat "$f")" = "1" ] && mode=ac
+  done
+fi
+
+case "$mode" in
+  ac)
+    echo 1 > "$PSTATE/hwp_dynamic_boost"
+    echo 30 > "$PSTATE/min_perf_pct"
+    echo 60000000 > "$RAPL/constraint_0_power_limit_uw"
+    echo 80000000 > "$RAPL/constraint_1_power_limit_uw"
+    ;;
+  bat)
+    echo 0 > "$PSTATE/hwp_dynamic_boost"
+    echo 8 > "$PSTATE/min_perf_pct"
+    echo 22000000 > "$RAPL/constraint_0_power_limit_uw"
+    echo 27000000 > "$RAPL/constraint_1_power_limit_uw"
+    ;;
+  *)
+    echo "usage: $0 [ac|bat|auto]" >&2
+    exit 2
+    ;;
+esac
