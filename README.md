@@ -1,53 +1,131 @@
 # arch_rice — ROG Flow Z13 dotfiles
 
-Personal Arch Linux rice for an **ASUS ROG Flow Z13 (ACRNM RMT-02 / GZ301VIC**, Intel iGPU + NVIDIA RTX 4070). Primary session is **Hyprland (Wayland)**; legacy **i3 (X11)** config is kept too.
+Personal Arch Linux rice for an **ASUS ROG Flow Z13 (ACRNM RMT-02 / GZ301VIC**, Intel iGPU + NVIDIA RTX 4070). Primary session is **Hyprland (Wayland)**; a legacy **i3 (X11)** config is kept too.
 
-The repo **mirrors `$HOME`** and is deployed by symlinking each tracked file back into place (see [Install](#install)) — so editing a config here *is* editing the live config.
+The repo **mirrors `$HOME`** — `install.sh` deploys by symlinking each tracked path back into place, so editing a file here *is* editing the live config. (Editing must target the real path under `~/arch_rice/…`; the symlinks point here.)
+
+---
 
 ## Highlights
 
-- **Xiaomi Buds 6 on Linux** — reverse-engineered stack (no existing tool supports these): per-bud + case battery, in-ear position, **ANC control**, **in-ear auto-pause**, and a waybar widget with a custom battery-case glyph.
-- **Hybrid GPU done right** — the compositor is pinned to the **Intel iGPU** so the RTX 4070 can sleep; games opt in with `prime-run`, and the Steam client UI is forced onto the iGPU (no more cross-GPU-copy lag / dGPU stuck awake).
-- **Green Bibata cursor** — `recolor-cursor` regenerates a `#b5bd68` variant of Bibata from source at install time (no binaries in git).
-- **Tablet / detachable-keyboard niceties** — accelerometer auto-rotate, touchscreen gestures (lisgd), on-screen keyboard, touchpad toggle, ASUS pen button actions.
-- **Camera stack** — IPU6 rear camera exposed to browsers via a V4L2 loopback bridge, plus slide-in front/rear camera peek widgets.
-- **Hardware keys** — volume-rocker remap (keyd), fan-profile OSD (Fn+F5), and an **Fn+F12 "suspend on lid close" toggle**.
+- **Xiaomi Buds 6 on Linux** — reverse-engineered stack (nothing else supports these): per-bud + case battery, in-ear position, **ANC control**, **in-ear auto-pause**, single-tap play/pause fix, waybar widget with a custom glyph.
+- **Hybrid GPU** — compositor pinned to the **Intel iGPU** so the RTX 4070 sleeps; games opt in with `prime-run`; the Steam UI is forced onto the iGPU.
+- **Tablet-first** — accelerometer auto-rotate, touchscreen gestures, on-screen keyboard, pen actions, detachable-keyboard touchpad toggle.
+- **Green-recolored Bibata cursor**, styled **hyprlock** (locks before sleep), **rofimoji** emoji grid, camera peek widgets, volume-rocker modes.
+
+---
+
+## Theming
+
+**Base:** [Tomorrow Night](https://github.com/chriskempson/tomorrow-theme). **UI font:** `Departure Mono` everywhere, with `Symbols Nerd Font Mono` for icon glyphs and the bundled `BudsExtra` for the earbuds glyph.
+
+**Palette / accents** (two accents coexist by design):
+
+| role | hex | used by |
+|------|-----|---------|
+| background | `#1d1f21` | everything |
+| foreground | `#c5c8c6` | everything |
+| **ACRNM accent** (chartreuse) | `#ffff78` | Hyprland active border, waybar, wofi launcher, rofi, dunst frame/highlight |
+| **green accent** | `#b5bd68` | cursor, hyprlock, waybar earbuds "connected", riptide, ANC OSD |
+| warn (amber) | `#f0c674` | low battery |
+| alert (red) | `#bd2c40` / `#cc6666` | dunst urgent, lock fail |
+| dim / off | `#555555` | disabled indicators |
+
+**Per-package theming:**
+
+| package | font | accent | notes |
+|---------|------|--------|-------|
+| **Hyprland** | — | `#ffff78` border | `gaps_in 8`, `gaps_out 20`, `border_size 1`, `rounding 0`, blur on; inactive border transparent |
+| **Waybar** | Departure Mono 11 | `#ffff78` (+green earbuds, amber low-batt) | custom modules (see below) |
+| **wofi** (launcher) | Departure Mono | `#ffff78` ACRNM | `config` + `style.css` |
+| **wofi** (emoji) | Noto Color Emoji | `#b5bd68` green, **4-column grid** | separate `emoji.conf` / `emoji.css` |
+| **rofi** | — | ACRNM theme | `@theme themes/acrnm.rasi` |
+| **dunst** | Departure Mono 10 | `#ffff78` frame + `highlight` | `highlight` = the ANC-OSD progress-bar fill |
+| **alacritty** | Departure Mono 10 | Tomorrow palette | |
+| **hyprlock** | Departure Mono | `#b5bd68` green | blurred wallpaper + big clock/date |
+| **cursor** | — | `Bibata-Modern-Green` (`#b5bd68`) | recolored from Bibata-Modern-Ice by `recolor-cursor`; xcursor size 24 |
+
+---
+
+## Gestures
+
+**Touchscreen** (lisgd via `touch-gestures`; ELAN9008 panel — works with the keyboard detached):
+
+| gesture | action |
+|---------|--------|
+| **3-finger swipe up** | toggle the on-screen keyboard (`wvkbd`) |
+| **swipe down from the top-right corner** | rear-camera peek toggle |
+| **swipe down from the top-left corner** | front-camera peek toggle |
+
+**Trackpad:** natural scroll; per-device `altwin:swap_lalt_lwin` + tuned sensitivity for the detachable keyboard.
+
+---
+
+## Keybindings
+
+Window-management binds (focus / move / resize / workspaces / `Super+R` resize submap) are in `.config/hypr/hyprland.conf`. Hardware / function-row / pen / app bindings:
+
+**Function row & media keys**
+| key | action |
+|-----|--------|
+| mute / mic-mute *(F-row)* | `audio-mute sink` / `audio-mute source` |
+| volume down / up *(F-row)* | `rocker down` / `rocker up` |
+| play-pause / prev / next | `playerctl` |
+| `Fn+F5` | fan / performance profile (asusd) + OSD |
+| `Fn+F7` / `Fn+F8` | keyboard backlight down / up |
+| touchpad key *(Fn+F6)* | toggle the detachable-keyboard touchpad |
+| `Fn+F11` | sleep (logind) |
+| `Fn+F12` | toggle **suspend on lid close** (+ OSD, persistent) |
+
+**Volume rocker (side buttons — keyd)**
+| input | action |
+|-------|--------|
+| rocker up / down | volume **or** screen brightness (mode-dependent) — `rocker` |
+| rocker both-press *(→ F24)* | switch rocker mode |
+
+**Pen / launchers / misc**
+| key | action |
+|-----|--------|
+| pen top-button **double-click** | summon / dismiss **Krita** on its scratchpad workspace (`penbtn`) |
+| pen eraser-region press | region screenshot (`pen-screenshotd`) |
+| `Super+C` | **lock** (hyprlock via `loginctl lock-session`) |
+| `Super+D` | app launcher (wofi) |
+| `Super+.` | **emoji picker** (rofimoji grid) |
+| `Super+Shift+O` | OCR (OCR4Linux) |
+| `Alt+Space` | Claude Desktop |
+
+---
+
+## Custom behaviors & scripts (`~/.local/bin`)
+
+**Earbuds (Xiaomi Buds 6)** — `buds-daemon` holds the control channel and writes `~/.cache/buds-battery.json`; `earbuds-status` is the waybar widget (**click** = connect/disconnect, **right-click** = daemon toggle). `buds-anc off|anc|transparency|cycle` switches noise cancelling (dunst OSD shows the mode). Removing a bud **auto-pauses** media; reinserting resumes. Opening the case shows an image overlay that morphs to which bud is docked. Single-tap play/pause works via `mpris-proxy`.
+
+**Cameras** — `rearcam-bridge` exposes the IPU6 rear camera to browsers via a V4L2 loopback. `rearcam-widget` / `frontcam-widget` are pinned mpv peek panels (corner-swipe gestures above, or waybar `rearcam-status`), auto-oriented for the current rotation.
+
+**Tablet / input** — `auto-rotate` (accelerometer; landscape-locked while the keyboard is attached), `touch-gestures` (lisgd), `wvkbd-toggle` (on-screen keyboard), `touchpad-toggle`, `penbtn`, `pen-screenshotd`.
+
+**Hardware / OSD** — `osd` (generic dunst OSD wrapper), `rocker` (volume/brightness rocker modes), `audio-mute`, `kbd-backlight`, `fan-profile-osd` (Fn+F5), `lid-sleep-toggle` (Fn+F12).
+
+**GPU / cursor / lock** — `prime-run` (NVIDIA offload), `recolor-cursor` (recolor a grayscale xcursor theme). Lock = `hyprlock` + `hypridle` (locks *before* sleep → password on wake; idle-lock at 5 min, screen off at 6 min).
+
+---
 
 ## Structure
 
 ```
 ~/arch_rice/
-├── .config/                         # whole-dir symlinks into ~/.config
-│   ├── hypr/  waybar/  alacritty/  dunst/  rofi/  ranger/  cava/  glava/
-│   ├── picom/  polybar/  i3/  nvim/  tmux/  neofetch/  urxvt/  spotify-tui/
+├── .config/          # whole-dir symlinks: hypr waybar wofi alacritty dunst rofi ranger
+│                     #   cava glava picom polybar i3 nvim tmux neofetch urxvt
 ├── .local/
-│   ├── bin/                         # all custom scripts (symlinked individually; on PATH via .bashrc)
+│   ├── bin/          # all custom scripts (symlinked individually; on PATH via .bashrc)
 │   └── share/
-│       ├── applications/steam.desktop   # Steam UI → Intel iGPU + 1.25 scaling override
-│       └── fonts/BudsExtra.ttf          # waybar earbuds "egg" glyph (U+F3FF)
-├── system/                          # reference copies of /etc tweaks (applied manually)
-│   └── keyd-default.conf            # volume-rocker chord → F24
+│       ├── applications/steam.desktop   # Steam UI → iGPU + 1.25 scaling
+│       └── fonts/BudsExtra.ttf          # waybar earbuds glyph (U+F3FF)
+├── system/           # reference /etc tweaks: keyd-default.conf (rocker), cpu-tune
 ├── .bashrc   .xinitrc   install.sh
 ```
 
-## Scripts (`~/.local/bin`)
-
-**Earbuds (Xiaomi Buds 6)**
-| script | purpose |
-|--------|---------|
-| `buds-daemon` | holds the RFCOMM control channel; writes battery/position/ANC to `~/.cache/buds-battery.json`; drives in-ear auto-pause + the ANC OSD |
-| `buds-battery` | one-shot per-component battery (L / R / Case) reader (SAFER+ auth, FE-DC-BA framing) |
-| `buds-anc` | control noise cancelling — `off` / `anc` / `transparency` / `cycle` / `status` |
-| `buds-popup` / `buds-case-watcher` | case-open image overlay that morphs by which bud is docked |
-| `earbuds-status` / `earbuds-toggle` / `buds-daemon-toggle` | waybar module + connect / daemon toggles |
-
-**Cameras** — `rearcam-bridge` (IPU6 → V4L2 loopback for browsers), `rearcam-status`, `rearcam-widget`, `frontcam-widget`, `cam-fullscreen`, `cam-geometry`, `cam-reorient`, `cam-clip`, `camwidget.lua`
-
-**Tablet / input** — `auto-rotate`, `touch-gestures` (lisgd), `touchpad-toggle`, `wvkbd-toggle`, `penbtn`, `pen-screenshotd`
-
-**Hardware / OSD** — `osd` (generic dunst OSD wrapper), `rocker` (volume-rocker mode switch), `audio-mute`, `kbd-backlight`, `fan-profile-osd`, `lid-sleep-toggle` (Fn+F12)
-
-**GPU / cursor** — `prime-run` (NVIDIA offload), `recolor-cursor` (recolor a grayscale xcursor theme)
+---
 
 ## Install
 
@@ -59,63 +137,17 @@ cd ~/arch_rice
 
 `install.sh`:
 
-- **Packages** — the Hyprland/Wayland tooling and Flow Z13 hardware deps: `wofi`, `hyprlock`, `grim`/`slurp`/`wl-clipboard`, `mpv`, `iio-sensor-proxy` (auto-rotate), `keyd` (volume rocker), `v4l2loopback-dkms` (rear-cam bridge), `bluez`/`bluez-utils`, the GTK layer-shell python stack (`gtk-layer-shell`, `python-gobject/-cairo/-evdev`), nerd-font symbols; and from the AUR: `wvkbd` (on-screen keyboard), `lisgd` (gestures), `light` (rocker brightness), `asusctl`, `bibata-cursor-theme`.
-- **Deploy** — backs up existing configs to `~/.config-backup-*`, then symlinks the `.config/` dirs, home files (`.bashrc`, `.xinitrc`), **every file in `.local/bin/`**, `.local/share/applications/*` (Steam override) and `.local/share/fonts/*` (+ `fc-cache`).
-- **Generate/enable** — regenerates the green cursor (`Bibata-Modern-Green`) from Bibata; deploys `system/keyd-default.conf` → `/etc/keyd/`; enables `keyd`, `bluetooth`, and the `mpris-proxy` user service.
+- **Packages** — Hyprland/Wayland tooling (`wofi`, `hyprlock`, `hypridle`, `grim`/`slurp`/`wl-clipboard`, `mpv`, `rofimoji`+`wtype`, nerd-font symbols, `noto-fonts-emoji`) and Flow Z13 hardware deps (`iio-sensor-proxy`, `keyd`, `v4l2loopback-dkms`, `bluez`/`bluez-utils`, GTK layer-shell python stack); AUR: `wvkbd`, `lisgd`, `light`, `asusctl` (also in the *g14* repo), `bibata-cursor-theme`.
+- **Deploy** — backs up existing configs to `~/.config-backup-*`, then symlinks the `.config/` dirs, home files, every `.local/bin/` script, `.local/share/applications` + `.local/share/fonts` (+ `fc-cache`).
+- **Generate / enable** — regenerates the green cursor (`Bibata-Modern-Green`) from Bibata; deploys `system/keyd-default.conf` → `/etc/keyd/`; enables `keyd`, `bluetooth`, and the `mpris-proxy` user service.
 
-Other `system/` reference tweaks (not auto-applied) are applied by hand as needed.
+> Verified: the deploy logic runs clean in an isolated `$HOME` (all symlinks resolve, backups made, cursor generated). `system/cpu-tune` and the iio-sensor-proxy suspend hook are applied by hand.
+
+---
 
 ## Fonts
 
-Terminus (bitmap), a Nerd Font (icons), Font Awesome, Siji (polybar), and the bundled **BudsExtra.ttf** (waybar earbuds glyph). `bibata-cursor-theme` (AUR) is the base for the green cursor.
-
-## Color scheme
-
-Tomorrow Night, with **green `#b5bd68`** as the everywhere-accent (waybar, cursor, TUIs):
-
-| role | hex |
-|------|-----|
-| background | `#1d1f21` |
-| foreground | `#c5c8c6` |
-| accent (green) | `#b5bd68` |
-| warn (amber) | `#f0c674` |
-| dim / off | `#555555` |
-
-## Keybindings
-
-Window-management binds (focus / move / resize / workspaces / submaps) live in `.config/hypr/hyprland.conf` (83 binds). The hardware, function-row and pen mappings:
-
-### Function row & media keys
-| key | action |
-|-----|--------|
-| mute / mic-mute *(F-row)* | `audio-mute sink` / `audio-mute source` |
-| volume down / up *(F-row)* | `rocker down` / `rocker up` |
-| play-pause / prev / next | `playerctl play-pause` / `previous` / `next` |
-| `Fn+F5` | fan / performance profile (asusd) + OSD |
-| `Fn+F7` / `Fn+F8` *(brightness keys)* | keyboard backlight down / up |
-| touchpad key *(Fn+F6, KEY_F21)* | toggle the detachable-keyboard touchpad |
-| `Fn+F11` | sleep (logind) |
-| `Fn+F12` | toggle **suspend on lid close** (+ OSD, persistent) |
-
-### Volume rocker (side buttons — keyd)
-| input | action |
-|-------|--------|
-| rocker up / down | volume **or** screen brightness (mode-dependent) — `rocker` |
-| rocker both-press *(→ F24)* | switch rocker mode |
-
-### ASUS pen
-| input | action |
-|-------|--------|
-| top button **double-click** *(Super + code:197)* | summon / dismiss **Krita** on its scratchpad workspace — `penbtn` |
-| eraser-region press | region screenshot daemon — `pen-screenshotd` |
-
-### Launchers / misc
-| key | action |
-|-----|--------|
-| `Super+D` | app launcher (wofi) |
-| `Super+P` | emoji picker |
-| `Super+R` | resize submap |
-| `Alt+Space` | Claude Desktop |
+`Departure Mono` (UI), a Nerd Font + `ttf-nerd-fonts-symbols-mono` (glyphs), `noto-fonts-emoji` (emoji), the bundled `BudsExtra.ttf` (earbuds glyph); Terminus + Siji for the legacy polybar. `bibata-cursor-theme` is the base for the green cursor.
 
 ## Credits
 

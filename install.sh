@@ -147,7 +147,6 @@ PACMAN_PACKAGES=(
 
 # AUR packages
 AUR_PACKAGES=(
-    "spotify-tui"
     "glava"
     "siji-git"
     "ttf-unifont"
@@ -220,7 +219,6 @@ CONFIG_DIRS=(
     "polybar"
     "ranger"
     "rofi"
-    "spotify-tui"
     "tmux"
     "urxvt"
     "waybar"
@@ -384,5 +382,4 @@ echo "  1. Log out and select i3 or Hyprland from your display manager"
 echo "  2. Or start X11 with: startx"
 echo "  3. Or start Hyprland with: Hyprland"
 echo ""
-echo "Optional: Set up spotify-tui with: spt"
 echo ""

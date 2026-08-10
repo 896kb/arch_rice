@@ -18,8 +18,6 @@
 !.config/alacritty/**/*
 !.config/rofi
 !.config/rofi/**/*
-!.config/spotify-tui
-!.config/spotify-tui/**/*
 !.config/glava
 !.config/glava/**/*
 !.config/tmux
@@ -50,8 +48,6 @@
 !install.sh
 
 # Ignore sensitive files
-.config/spotify-tui/.spotify_token_cache.json
-.config/spotify-tui/client.yml
 
 # Ignore auto-generated nvim files
 .config/nvim/lazy-lock.json
