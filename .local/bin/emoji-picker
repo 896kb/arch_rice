@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Emoji / symbol picker via rofimoji, using wofi as the selector (matches $menu).
+# Default action types the picked glyph into the focused window (needs wtype);
+# pass --action copy to put it on the clipboard instead. Bound to Super+. (period).
+exec rofimoji --selector wofi "$@"

@@ -124,6 +124,9 @@ PACMAN_PACKAGES=(
     "mpv"                         # camera peek widgets
     "chafa"                       # inline terminal image viewer (img() in .bashrc)
     "brightnessctl"               # backlight control
+    "rofimoji"                    # emoji / symbol picker (Super+. , wofi selector)
+    "wtype"                       # types the picked emoji into the focused window
+    "noto-fonts-emoji"            # color emoji rendering
     # hardware
     "iio-sensor-proxy"            # accelerometer -> auto-rotate / device rotation
     "keyd"                        # volume-rocker key remap (config deployed from system/)
