@@ -4,10 +4,18 @@
 # Supports NVIDIA (nvidia-smi) and AMD (via sysfs)
 
 if command -v nvidia-smi &> /dev/null; then
+    # Resolve the dGPU's PCI address from sysfs — it differs per machine, and
+    # unlike lspci these reads are cached attributes that can't wake the device.
+    dgpu=""
+    for d in /sys/bus/pci/devices/*; do
+        [[ "$(cat "$d/vendor" 2>/dev/null)" == "0x10de" ]] || continue
+        case "$(cat "$d/class" 2>/dev/null)" in 0x030*) dgpu="$d"; break ;; esac
+    done
+
     # Only poll the dGPU if it's awake AND actually in use (fuser detects an open
     # handle). Otherwise show 'zzz' and don't touch it, so it can suspend / stay
     # suspended (polling an idle-but-active dGPU would block it from sleeping).
-    if [[ "$(cat /sys/bus/pci/devices/0000:01:00.0/power/runtime_status 2>/dev/null)" != "active" ]] || ! fuser -s /dev/nvidia0 2>/dev/null; then
+    if [[ -z "$dgpu" ]] || [[ "$(cat "$dgpu/power/runtime_status" 2>/dev/null)" != "active" ]] || ! fuser -s /dev/nvidia0 2>/dev/null; then
         echo "{\"text\": \"zzz\", \"tooltip\": \"dGPU asleep (no GPU app running)\", \"class\": \"asleep\"}"
         exit 0
     fi

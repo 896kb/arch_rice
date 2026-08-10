@@ -1,4 +1,9 @@
 {
+    // Host profile: defines "modules-right" plus any hardware-specific module
+    // definitions (e.g. custom/rearcam on the Z13). Symlinked by install.sh to
+    // .config/waybar/profile.d/<profile>.jsonc.
+    "include": ["~/.config/waybar-profile.jsonc"],
+
     "layer": "top",
     "position": "bottom",
     "height": 27,
@@ -9,7 +14,6 @@
 
     "modules-left": ["hyprland/workspaces", "custom/cpu", "memory", "custom/gpu", "custom/vram"],
     "modules-center": ["custom/spotify", "custom/spotify-prev", "custom/spotify-play-pause", "custom/spotify-next"],
-    "modules-right": ["custom/rearcam", "custom/earbuds", "disk", "custom/backlight", "pulseaudio", "custom/network", "battery", "clock", "custom/power"],
 
     "hyprland/workspaces": {
         "format": "{id}",
@@ -60,13 +64,7 @@
         "format": "{}"
     },
 
-    "custom/rearcam": {
-        "exec": "~/.local/bin/rearcam-status",
-        "return-type": "json",
-        "interval": 2,
-        "on-click": "~/.local/bin/rearcam-bridge toggle",
-        "format": "{}"
-    },
+    // custom/rearcam is defined in the host profile (Z13 only).
 
     "custom/earbuds": {
         "exec": "~/.local/bin/earbuds-status",

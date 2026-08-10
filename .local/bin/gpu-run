@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Run a command on the NVIDIA dGPU via PRIME render offload.
+#
+# The dGPU otherwise stays runtime-suspended (~0W): the compositor is pinned to
+# the Intel iGPU (AQ_DRM_DEVICES, set in ~/.bash_profile) and glvnd is forced to
+# Mesa-only EGL/GLX (profile.d/features/nvidia-prime.conf) so nothing accidentally
+# opens /dev/nvidia0. Launching through this wakes the dGPU for that one process
+# and it sleeps again once the process exits.
+#
+# Usage:
+#   gpu-run <command> [args...]     run <command> on the dGPU
+#   gpu-run --status                show dGPU power state
+#   gpu-run --pci                   print the dGPU PCI address (for scripts)
+#
+# `prime-run` is a symlink to this; both names work.
+
+set -u
+
+# PCI address (0000:01:00.0 form) of the first NVIDIA display-class device.
+# Resolved at runtime rather than hardcoded — the bus address differs between
+# machines (and between a Z13's RTX 4070 and a Book Pro's MX550/RTX 2050).
+gpu_pci() {
+    local d
+    for d in /sys/bus/pci/devices/*; do
+        [[ "$(cat "$d/vendor" 2>/dev/null)" == "0x10de" ]] || continue
+        case "$(cat "$d/class" 2>/dev/null)" in
+            0x030*) basename "$d"; return 0 ;;
+        esac
+    done
+    return 1
+}
+
+case "${1-}" in
+    --pci)
+        gpu_pci || { echo "no NVIDIA dGPU found" >&2; exit 1; }
+        exit 0
+        ;;
+    --status)
+        pci="$(gpu_pci)" || { echo "no NVIDIA dGPU on this machine"; exit 1; }
+        echo "dGPU:           $(lspci -s "$pci" 2>/dev/null | cut -d: -f3- | sed 's/^ *//')"
+        echo "PCI address:    $pci"
+        echo "runtime status: $(cat "/sys/bus/pci/devices/$pci/power/runtime_status" 2>/dev/null || echo unknown)"
+        echo "power control:  $(cat "/sys/bus/pci/devices/$pci/power/control" 2>/dev/null || echo unknown)"
+        if fuser -s /dev/nvidia0 2>/dev/null; then
+            echo "clients:        $(fuser /dev/nvidia0 2>/dev/null | tr -s ' ')"
+        else
+            echo "clients:        none (free to suspend)"
+        fi
+        exit 0
+        ;;
+    ""|-h|--help)
+        sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0
+        ;;
+esac
+
+# The compositor forces Mesa-only EGL to keep the dGPU asleep; drop that here so
+# this app can load the nvidia EGL vendor for offload.
+unset __EGL_VENDOR_LIBRARY_FILENAMES
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export __VK_LAYER_NV_optimus=NVIDIA_only
+export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json
+exec "$@"

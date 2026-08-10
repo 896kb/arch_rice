@@ -1,0 +1,13 @@
+// Waybar host profile: generic — no hardware-specific modules.
+{
+    "modules-right": [
+        "custom/earbuds",
+        "disk",
+        "custom/backlight",
+        "pulseaudio",
+        "custom/network",
+        "battery",
+        "clock",
+        "custom/power"
+    ]
+}

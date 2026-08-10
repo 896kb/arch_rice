@@ -1,0 +1,14 @@
+// Waybar host profile: Xiaomi Book Pro 2022
+// No rear IPU6 camera module — this machine has a plain UVC webcam.
+{
+    "modules-right": [
+        "custom/earbuds",
+        "disk",
+        "custom/backlight",
+        "pulseaudio",
+        "custom/network",
+        "battery",
+        "clock",
+        "custom/power"
+    ]
+}

@@ -1,6 +1,6 @@
-# arch_rice — ROG Flow Z13 dotfiles
+# arch_rice — Hyprland dotfiles
 
-Personal Arch Linux rice for an **ASUS ROG Flow Z13 (ACRNM RMT-02 / GZ301VIC**, Intel iGPU + NVIDIA RTX 4070). Primary session is **Hyprland (Wayland)**; a legacy **i3 (X11)** config is kept too.
+Personal Arch Linux rice, built around an **ASUS ROG Flow Z13 (ACRNM RMT-02 / GZ301VIC**, Intel iGPU + NVIDIA RTX 4070) and portable to other machines through **host profiles** (see below). Primary session is **Hyprland (Wayland)**; a legacy **i3 (X11)** config is kept too.
 
 The repo **mirrors `$HOME`** — `install.sh` deploys by symlinking each tracked path back into place, so editing a file here *is* editing the live config. (Editing must target the real path under `~/arch_rice/…`; the symlinks point here.)
 
@@ -115,15 +115,54 @@ Window-management binds (focus / move / resize / workspaces / `Super+R` resize s
 ```
 ~/arch_rice/
 ├── .config/          # whole-dir symlinks: hypr waybar wofi alacritty dunst rofi ranger
-│                     #   cava glava picom polybar i3 nvim tmux neofetch urxvt
+│   │                 #   cava glava picom polybar i3 nvim tmux neofetch urxvt
+│   ├── hypr/profile.d/       # per-host hyprland fragments + features/*.conf
+│   └── waybar/profile.d/     # per-host waybar module lists
 ├── .local/
 │   ├── bin/          # all custom scripts (symlinked individually; on PATH via .bashrc)
 │   └── share/
 │       ├── applications/steam.desktop   # Steam UI → iGPU + 1.25 scaling
 │       └── fonts/BudsExtra.ttf          # waybar earbuds glyph (U+F3FF)
-├── system/           # reference /etc tweaks: keyd-default.conf (rocker), cpu-tune
-├── .bashrc   .xinitrc   install.sh
+├── lib/profile.sh    # host detection (DMI) + feature helpers
+├── profiles/         # z13.sh, xiaomi.sh, generic.sh — packages/features per machine
+├── system/           # reference /etc tweaks: keyd-default.conf, cpu-tune, nvidia-pm.conf
+├── .bashrc   .bash_profile   .xinitrc   install.sh
 ```
+
+---
+
+## Host profiles
+
+One repo, several machines. A **profile** declares what hardware a machine has; `install.sh` uses it to pick packages, decide which `~/.local/bin` scripts to deploy, and link the right Hyprland/waybar fragments.
+
+| Profile | Machine |
+|---|---|
+| `z13` | ROG Flow Z13 GZ301VIC — dGPU, ASUS platform, IPU6 rear camera, tablet/pen |
+| `xiaomi` | Xiaomi Book Pro 2022 — dGPU, clamshell, no ASUS/IPU6/tablet |
+| `generic` | unknown hardware — portable subset only |
+
+Resolution order: `--profile=<name>` → `$RICE_PROFILE` → `~/.config/rice-profile` → DMI autodetection → `generic`.
+
+```bash
+./install.sh                    # autodetect
+./install.sh --profile=xiaomi   # force
+./install.sh --list-profiles
+```
+
+**Adding a machine:** write `profiles/<name>.sh` (features, extra packages, `PROFILE_BIN_EXCLUDE`, optional `profile_system_setup` hook), plus `.config/hypr/profile.d/<name>.conf` and `.config/waybar/profile.d/<name>.jsonc`. Hardware-specific Hyprland bits are composed from `profile.d/features/{nvidia-prime,asus,ipu6-camera,tablet}.conf`.
+
+Two generated symlinks live *outside* the symlinked config dirs, so nothing dirties the repo: `~/.config/hypr-profile.conf` and `~/.config/waybar-profile.jsonc`.
+
+### Hybrid GPU / dGPU on demand
+
+Machines with the `nvidia_prime` feature keep the dGPU asleep by default: the compositor is pinned to the iGPU via `AQ_DRM_DEVICES` (resolved dynamically in `.bash_profile`, since DRM card numbers move across kernel updates), and glvnd is forced to Mesa-only EGL/GLX so nothing opens `/dev/nvidia0` by accident.
+
+```bash
+gpu-run <command>    # run one app on the dGPU (prime-run is an alias)
+gpu-run --status     # PCI address, runtime state, open clients
+```
+
+`system/nvidia-pm.conf` → `/etc/modprobe.d/` enables D3cold runtime suspend. The waybar GPU/VRAM modules resolve the dGPU's PCI address from sysfs (no hardcoded bus address) and show `zzz` without waking it.
 
 ---
 
@@ -137,9 +176,9 @@ cd ~/arch_rice
 
 `install.sh`:
 
-- **Packages** — Hyprland/Wayland tooling (`wofi`, `hyprlock`, `hypridle`, `grim`/`slurp`/`wl-clipboard`, `mpv`, `rofimoji`+`wtype`, nerd-font symbols, `noto-fonts-emoji`) and Flow Z13 hardware deps (`iio-sensor-proxy`, `keyd`, `v4l2loopback-dkms`, `bluez`/`bluez-utils`, GTK layer-shell python stack); AUR: `wvkbd`, `lisgd`, `light`, `asusctl` (also in the *g14* repo), `bibata-cursor-theme`.
-- **Deploy** — backs up existing configs to `~/.config-backup-*`, then symlinks the `.config/` dirs, home files, every `.local/bin/` script, `.local/share/applications` + `.local/share/fonts` (+ `fc-cache`).
-- **Generate / enable** — regenerates the green cursor (`Bibata-Modern-Green`) from Bibata; deploys `system/keyd-default.conf` → `/etc/keyd/`; enables `keyd`, `bluetooth`, and the `mpris-proxy` user service.
+- **Packages** — shared Hyprland/Wayland tooling (`wofi`, `hyprlock`, `hypridle`, `grim`/`slurp`/`wl-clipboard`, `mpv`, `rofimoji`+`wtype`, nerd-font symbols, `noto-fonts-emoji`, `bluez`/`bluez-utils`, GTK layer-shell python stack), plus whatever the host profile adds — e.g. `z13` pulls `iio-sensor-proxy`, `keyd`, `v4l2loopback-dkms` and AUR `wvkbd`/`lisgd`/`light`/`asusctl`; `xiaomi` pulls `nvidia-dkms` (dkms because it runs both `linux` and `linux-lts`), Intel VAAPI, `sof-firmware`, `power-profiles-daemon`, `thermald`.
+- **Deploy** — backs up existing configs to `~/.config-backup-*`, then symlinks the `.config/` dirs, home files, every `.local/bin/` script *the profile doesn't exclude*, `.local/share/applications` + `.local/share/fonts` (+ `fc-cache`), and the two host-profile fragments.
+- **Generate / enable** — regenerates the green cursor (`Bibata-Modern-Green`) from Bibata; enables `bluetooth` and the `mpris-proxy` user service; then runs the profile's `profile_system_setup` hook (`z13`: `system/keyd-default.conf` → `/etc/keyd/` + `keyd.service`; `xiaomi`: `power-profiles-daemon` + `thermald`; both: `system/nvidia-pm.conf`).
 
 > Verified: the deploy logic runs clean in an isolated `$HOME` (all symlinks resolve, backups made, cursor generated). `system/cpu-tune` and the iio-sensor-proxy suspend hook are applied by hand.
 

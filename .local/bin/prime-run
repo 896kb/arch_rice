@@ -1,13 +1,1 @@
-#!/usr/bin/env bash
-# Run a command on the NVIDIA dGPU via PRIME render offload. The dGPU otherwise
-# stays runtime-suspended (~0W); launching through this wakes it for the app and
-# it sleeps again afterwards. Usage: prime-run <command> [args...]
-# the compositor forces Mesa-only EGL to keep the dGPU asleep; drop that here so
-# this app can load the nvidia EGL vendor for offload
-unset __EGL_VENDOR_LIBRARY_FILENAMES
-export __NV_PRIME_RENDER_OFFLOAD=1
-export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-export __GLX_VENDOR_LIBRARY_NAME=nvidia
-export __VK_LAYER_NV_optimus=NVIDIA_only
-export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json
-exec "$@"
+gpu-run

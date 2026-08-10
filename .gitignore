@@ -43,9 +43,18 @@
 !.local/share/fonts
 !.local/share/fonts/**/*
 !.bashrc
+!.bash_profile
 !.xinitrc
 !README.md
 !install.sh
+
+# host-profile machinery
+!lib/
+!lib/**/*
+!profiles/
+!profiles/**/*
+!system/
+!system/**/*
 
 # Ignore sensitive files
 

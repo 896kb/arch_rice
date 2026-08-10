@@ -1,0 +1,26 @@
+// Waybar host profile: ROG Flow Z13 (GZ301VIC)
+// Linked to ~/.config/waybar-profile.jsonc by install.sh and pulled in via the
+// "include" key in .config/waybar/config. Defines the modules that differ per
+// machine; everything shared stays in the main config.
+{
+    "modules-right": [
+        "custom/rearcam",
+        "custom/earbuds",
+        "disk",
+        "custom/backlight",
+        "pulseaudio",
+        "custom/network",
+        "battery",
+        "clock",
+        "custom/power"
+    ],
+
+    // Rear IPU6 camera -> v4l2loopback bridge toggle (Z13 only)
+    "custom/rearcam": {
+        "exec": "~/.local/bin/rearcam-status",
+        "return-type": "json",
+        "interval": 2,
+        "on-click": "~/.local/bin/rearcam-bridge toggle",
+        "format": "{}"
+    }
+}
