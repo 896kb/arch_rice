@@ -223,6 +223,7 @@ CONFIG_DIRS=(
     "tmux"
     "urxvt"
     "waybar"
+    "wofi"
 )
 
 # Create backup directory

@@ -3,4 +3,5 @@
 # Action "type copy": types the glyph into native Wayland apps (wtype) AND copies it to
 # the clipboard — wtype's virtual-keyboard injection doesn't reach Chromium/Electron
 # (Brave) or XWayland apps, so in those just paste (Ctrl+V). Bound to Super+. (period).
-exec rofimoji --selector wofi --action type copy "$@"
+exec rofimoji --selector wofi --action type copy \
+  --selector-args "--conf $HOME/.config/wofi/emoji.conf --style $HOME/.config/wofi/emoji.css" "$@"

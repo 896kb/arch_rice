@@ -30,6 +30,8 @@
 !.config/nvim/**/*
 !.config/waybar
 !.config/waybar/**/*
+!.config/wofi
+!.config/wofi/**/*
 !.config/hypr
 !.config/hypr/**/*
 !.config/background.jpg
