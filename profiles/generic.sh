@@ -12,6 +12,10 @@ PROFILE_FEATURES=(
 PROFILE_PACMAN=()
 PROFILE_AUR=()
 
+PROFILE_ACCENT="b5bd68"
+PROFILE_ACCENT2="ffff78"
+PROFILE_CURSOR_THEME="Bibata-Modern-Green"
+
 PROFILE_BIN_EXCLUDE=(
     auto-rotate
     touch-gestures

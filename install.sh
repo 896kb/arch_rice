@@ -65,6 +65,8 @@ done
 
 # shellcheck source=lib/profile.sh
 source "$SCRIPT_DIR/lib/profile.sh"
+# shellcheck source=lib/theme.sh
+source "$SCRIPT_DIR/lib/theme.sh"
 rice_load_profile
 
 # Deploy system/nvidia-pm.conf — called from profiles with the nvidia_prime feature.
@@ -97,7 +99,8 @@ PACMAN_PACKAGES=(
     "waybar"
     
     # Terminals
-    "alacritty"
+    # NOTE: alacritty itself is NOT installed from the repos — the AUR list below
+    # pulls alacritty-smooth-cursor-git, which provides/conflicts with it.
     "rxvt-unicode"
     
     # Compositor & Display
@@ -188,7 +191,8 @@ AUR_PACKAGES=(
     "glava"
     "siji-git"
     "ttf-unifont"
-    "bibata-cursor-theme"   # base for the recolored green cursor (generated below)
+    "bibata-cursor-theme"          # base for the recolored green cursor (generated below)
+    "alacritty-smooth-cursor-git"  # alacritty + smooth cursor motion patch; provides/conflicts 'alacritty'
 )
 
 # Hardware-specific packages come from the host profile (profiles/<name>.sh).
@@ -237,6 +241,20 @@ else
     print_warning "Install manually: ${AUR_PACKAGES[*]}"
 fi
 
+# --- accent theming --------------------------------------------------------
+# A profile with non-canonical accents gets a recoloured mirror of .config/ and
+# .local/, and everything below deploys from there instead of straight out of
+# the repo. Canonical profiles skip this entirely.
+if rice_theme_is_canonical; then
+    DEPLOY_ROOT="$SCRIPT_DIR"
+    print_status "Accent: canonical (#${PROFILE_ACCENT}) — deploying repo directly"
+else
+    print_status "Accent: #${PROFILE_ACCENT} / #${PROFILE_ACCENT2} — building recoloured mirror"
+    stats="$(rice_theme_build "$RICE_THEME_ROOT")"
+    DEPLOY_ROOT="$RICE_THEME_ROOT"
+    print_success "Theme mirror at $RICE_THEME_ROOT ($stats)"
+fi
+
 # Deploy config files
 print_status "Deploying configuration files..."
 
@@ -267,10 +285,10 @@ BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
 for dir in "${CONFIG_DIRS[@]}"; do
     src=""
     # Check if config exists in .config/ subdirectory first
-    if [ -d "$SCRIPT_DIR/.config/$dir" ]; then
-        src="$SCRIPT_DIR/.config/$dir"
-    elif [ -d "$SCRIPT_DIR/$dir" ]; then
-        src="$SCRIPT_DIR/$dir"
+    if [ -d "$DEPLOY_ROOT/.config/$dir" ]; then
+        src="$DEPLOY_ROOT/.config/$dir"
+    elif [ -d "$DEPLOY_ROOT/$dir" ]; then
+        src="$DEPLOY_ROOT/$dir"
     fi
     
     if [ -n "$src" ]; then
@@ -303,8 +321,8 @@ for file in "${HOME_FILES[@]}"; do
     src=""
     if [ -f "$SCRIPT_DIR/$file" ]; then
         src="$SCRIPT_DIR/$file"
-    elif [ -f "$SCRIPT_DIR/.config/$file" ]; then
-        src="$SCRIPT_DIR/.config/$file"
+    elif [ -f "$DEPLOY_ROOT/.config/$file" ]; then
+        src="$DEPLOY_ROOT/.config/$file"
     fi
     
     if [ -n "$src" ]; then
@@ -324,9 +342,9 @@ for file in "${HOME_FILES[@]}"; do
 done
 
 # Deploy ~/.local/bin scripts (symlinked; PATH picks them up via .bashrc)
-if [ -d "$SCRIPT_DIR/.local/bin" ]; then
+if [ -d "$DEPLOY_ROOT/.local/bin" ]; then
     mkdir -p "$HOME/.local/bin"
-    for f in "$SCRIPT_DIR/.local/bin/"*; do
+    for f in "$DEPLOY_ROOT/.local/bin/"*; do
         [ -e "$f" ] || continue
         name="$(basename "$f")"
 
@@ -352,9 +370,9 @@ if [ -d "$SCRIPT_DIR/.local/bin" ]; then
 fi
 
 # Deploy ~/.local/share/applications overrides (e.g. steam.desktop: UI on iGPU + 1.25 scaling)
-if [ -d "$SCRIPT_DIR/.local/share/applications" ]; then
+if [ -d "$DEPLOY_ROOT/.local/share/applications" ]; then
     mkdir -p "$HOME/.local/share/applications"
-    for f in "$SCRIPT_DIR/.local/share/applications/"*; do
+    for f in "$DEPLOY_ROOT/.local/share/applications/"*; do
         [ -e "$f" ] || continue
         ln -sf "$f" "$HOME/.local/share/applications/$(basename "$f")"
         print_success "Linked applications/$(basename "$f")"
@@ -362,9 +380,9 @@ if [ -d "$SCRIPT_DIR/.local/share/applications" ]; then
 fi
 
 # Deploy custom fonts (e.g. BudsExtra.ttf — the waybar earbuds egg glyph) + refresh cache
-if [ -d "$SCRIPT_DIR/.local/share/fonts" ]; then
+if [ -d "$DEPLOY_ROOT/.local/share/fonts" ]; then
     mkdir -p "$HOME/.local/share/fonts"
-    for f in "$SCRIPT_DIR/.local/share/fonts/"*; do
+    for f in "$DEPLOY_ROOT/.local/share/fonts/"*; do
         [ -e "$f" ] || continue
         ln -sf "$f" "$HOME/.local/share/fonts/$(basename "$f")"
     done
@@ -372,21 +390,23 @@ if [ -d "$SCRIPT_DIR/.local/share/fonts" ]; then
     print_success "Custom fonts linked + font cache refreshed"
 fi
 
-# Generate the green cursor from the installed Bibata (recolor-cursor is pure-stdlib python).
-# The ~40MB recolored theme is kept OUT of git and regenerated here instead.
+# Generate the accent-coloured cursor from the installed Bibata (recolor-cursor is
+# pure-stdlib python). The ~40MB recolored theme is kept OUT of git and regenerated
+# here instead. Colour and theme name both come from the host profile, so the Z13
+# gets Bibata-Modern-Green and the Xiaomi gets Bibata-Modern-Pink.
 if [ -x "$HOME/.local/bin/recolor-cursor" ]; then
     if [ -d /usr/share/icons/Bibata-Modern-Ice ] || [ -d "$HOME/.local/share/icons/Bibata-Modern-Ice" ]; then
-        "$HOME/.local/bin/recolor-cursor" Bibata-Modern-Ice b5bd68 Bibata-Modern-Green \
-            && print_success "Generated Bibata-Modern-Green cursor" \
+        "$HOME/.local/bin/recolor-cursor" Bibata-Modern-Ice "$PROFILE_ACCENT" "$PROFILE_CURSOR_THEME" \
+            && print_success "Generated $PROFILE_CURSOR_THEME cursor (#$PROFILE_ACCENT)" \
             || print_warning "Cursor recolor failed"
     else
-        print_warning "Bibata-Modern-Ice not installed; skipping green cursor generation"
+        print_warning "Bibata-Modern-Ice not installed; skipping cursor generation"
     fi
 fi
 
 # Deploy background images
-if [ -d "$SCRIPT_DIR/.config" ]; then
-    for bg in "$SCRIPT_DIR/.config"/background.*; do
+if [ -d "$DEPLOY_ROOT/.config" ]; then
+    for bg in "$DEPLOY_ROOT/.config"/background.*; do
         if [ -f "$bg" ]; then
             filename=$(basename "$bg")
             ln -sf "$bg" "$HOME/.config/$filename"
@@ -404,7 +424,7 @@ print_success "Config files deployed"
 # repo dirt on every machine.
 print_status "Linking host profile fragments..."
 
-hypr_profile="$SCRIPT_DIR/.config/hypr/profile.d/$RICE_PROFILE.conf"
+hypr_profile="$DEPLOY_ROOT/.config/hypr/profile.d/$RICE_PROFILE.conf"
 if [ -f "$hypr_profile" ]; then
     ln -sfn "$hypr_profile" "$HOME/.config/hypr-profile.conf"
     print_success "hyprland profile -> $RICE_PROFILE.conf"
@@ -412,7 +432,7 @@ else
     print_warning "no hyprland fragment for profile '$RICE_PROFILE'"
 fi
 
-waybar_profile="$SCRIPT_DIR/.config/waybar/profile.d/$RICE_PROFILE.jsonc"
+waybar_profile="$DEPLOY_ROOT/.config/waybar/profile.d/$RICE_PROFILE.jsonc"
 if [ -f "$waybar_profile" ]; then
     ln -sfn "$waybar_profile" "$HOME/.config/waybar-profile.jsonc"
     print_success "waybar profile -> $RICE_PROFILE.jsonc"

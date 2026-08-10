@@ -35,6 +35,14 @@ PROFILE_PACMAN=(
 
 PROFILE_AUR=()
 
+# Pink accents instead of the committed green. ACCENT2 is ACCENT tinted 45%
+# toward white so it keeps the hue while matching the luminance of the yellow it
+# replaces — that yellow is used as a BACKGROUND behind black text (wofi
+# selection, waybar highlights), so a dark pink there would be unreadable.
+PROFILE_ACCENT="ff5f9e"
+PROFILE_ACCENT2="ffa7ca"
+PROFILE_CURSOR_THEME="Bibata-Modern-Pink"
+
 # Z13-only tooling: tablet/pen/rotation, IPU6 rear camera, ASUS platform.
 PROFILE_BIN_EXCLUDE=(
     # accelerometer / tablet

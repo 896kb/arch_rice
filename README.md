@@ -153,6 +153,22 @@ Resolution order: `--profile=<name>` → `$RICE_PROFILE` → `~/.config/rice-pro
 
 Two generated symlinks live *outside* the symlinked config dirs, so nothing dirties the repo: `~/.config/hypr-profile.conf` and `~/.config/waybar-profile.jsonc`.
 
+### Per-host accent colours
+
+The repo is stored in the **canonical green** palette (`#b5bd68` primary, `#ffff78` highlight). A profile can override both:
+
+```bash
+PROFILE_ACCENT="ff5f9e"                 # replaces the green
+PROFILE_ACCENT2="ffa7ca"                # replaces the yellow
+PROFILE_CURSOR_THEME="Bibata-Modern-Pink"
+```
+
+When a profile's accents differ from canonical, `install.sh` builds a **recoloured mirror** of `.config/` and `.local/` at `~/.local/share/arch_rice-theme/` and deploys from there instead of straight out of the repo. In that mirror, the 13 colour-bearing files are real recoloured copies; the other ~107 are symlinks back into the repo, so editing anything colour-free is still editing the repo live. Canonical profiles (the Z13) skip the mirror entirely and deploy the repo directly — zero behaviour change.
+
+The cursor is generated the same way: `recolor-cursor` builds `$PROFILE_CURSOR_THEME` from `$PROFILE_ACCENT`, and `XCURSOR_THEME` is set in the profile's Hyprland fragment.
+
+**Caveat:** after editing one of the colour-bearing files on a themed machine, re-run `./install.sh` to regenerate the mirror — otherwise the edit sits in the repo but isn't deployed. Files with no accent colour don't need this.
+
 ### Hybrid GPU / dGPU on demand
 
 Machines with the `nvidia_prime` feature keep the dGPU asleep by default: the compositor is pinned to the iGPU via `AQ_DRM_DEVICES` (resolved dynamically in `.bash_profile`, since DRM card numbers move across kernel updates), and glvnd is forced to Mesa-only EGL/GLX so nothing opens `/dev/nvidia0` by accident.

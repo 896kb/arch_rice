@@ -30,6 +30,12 @@ PROFILE_AUR=(
     "wvkbd"                       # on-screen touch keyboard
 )
 
+# Canonical colours — the repo is stored in this machine's palette, so no
+# recoloured mirror is generated and the repo is deployed directly.
+PROFILE_ACCENT="b5bd68"
+PROFILE_ACCENT2="ffff78"
+PROFILE_CURSOR_THEME="Bibata-Modern-Green"
+
 # Everything in .local/bin deploys here — this is the machine they were written for.
 PROFILE_BIN_EXCLUDE=()
 
