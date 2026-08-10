@@ -1,0 +1,123 @@
+/* ACRNM emoji grid — same visual language as the wofi launcher (wofi/style.css):
+   artwork strip on the left, #0a0a0a boxes, 1px #1a1a1a borders, square corners,
+   #ffff78 selection with black text.
+
+   Used by ~/.local/bin/emoji-picker via `rofimoji --selector rofi`. rofi is the
+   only selector that implements --hidden-descriptions: with --use-icons it emits
+   the glyph as the element ICON and the description as hidden META, so the tiles
+   show only the emoji while typing "laugh" still filters. wofi has no equivalent
+   display-vs-search split, which is why this lives here and not in wofi/emoji.css.
+
+   The accent is deliberately #ffff78 rather than acrnm.rasi's #bd2c40, so the
+   per-host recolour (lib/theme.sh) tracks it — pink on the Xiaomi. */
+
+configuration {
+  show-icons: true;
+}
+
+* {
+  background-color: #00000000;
+  text-color: #ffffff;
+  accent: #ffff78;
+  bg-deep: #000000;
+  bg-soft: #0a0a0a;
+  bg-line: #1a1a1a;
+  dim: #555555;
+}
+
+window {
+  font: "Departure Mono 11";
+  orientation: horizontal;
+  width: 720;
+  height: 480;
+  children: [logo, mainbox-wrapper];
+}
+
+/* acrnm-vert.png is 100x397. acrnm.rasi scales it to WIDTH, which works there
+   because the launcher is 400px tall and 397 ≈ 400. This window is 480px tall,
+   so width-scaling leaves 83px over and rofi tiles the image — a partial second
+   copy under the first. Scale to HEIGHT instead and widen the strip to the
+   matching aspect (480 * 100/397 ≈ 121) so it fills exactly, undistorted. */
+logo {
+  expand: false;
+  width: 121;
+  background-image: url("~/.config/rofi/themes/acrnm-vert.png", height);
+  padding: 0;
+}
+
+mainbox-wrapper {
+  expand: true;
+  orientation: vertical;
+  spacing: 0;
+  children: [mainbox];
+}
+
+mainbox {
+  background-color: @bg-soft;
+  padding: 16px;
+  spacing: 12px;
+  children: [inputbar, listview];
+  border: 1px;
+  border-color: @bg-line;
+}
+
+inputbar {
+  background-color: @bg-deep;
+  border: 0 0 1px 0;
+  border-color: @bg-line;
+  padding: 8px 12px;
+  spacing: 8px;
+  children: [prompt, entry];
+}
+
+prompt {
+  text-color: @accent;
+  padding: 0 8px 0 0;
+}
+
+entry {
+  text-color: #ffffff;
+  placeholder: "emoji //";
+  placeholder-color: @dim;
+}
+
+/* The grid itself. flow:horizontal + fixed-columns is what turns the list into
+   a grid; without both, rofi lays entries out as rows regardless of `columns`. */
+listview {
+  columns:       4;
+  lines:         4;
+  cycle:         true;
+  dynamic:       true;
+  layout:        vertical;
+  flow:          horizontal;
+  fixed-height:  true;
+  fixed-columns: true;
+  scrollbar:     false;
+  spacing:       2px;
+  background-color: @bg-soft;
+}
+
+element {
+  orientation: vertical;
+  padding: 10px;
+  background-color: transparent;
+  text-color: #ffffff;
+}
+
+element selected {
+  background-color: @accent;
+  text-color: #000000;
+}
+
+/* The glyph is rendered as the element icon (pango markup from rofimoji). */
+element-icon {
+  size: 48px;
+  horizontal-align: 0.5;
+  vertical-align: 0.5;
+  background-color: transparent;
+}
+
+/* Descriptions stay searchable via rofi's meta field but are never drawn. */
+element-text {
+  enabled: false;
+}

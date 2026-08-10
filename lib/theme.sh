@@ -21,6 +21,17 @@
 RICE_CANON_ACCENT="b5bd68"
 RICE_CANON_ACCENT2="ffff78"
 
+# Not every config spells colours in hex. hyprlock.conf uses decimal tuples —
+# rgba(181, 189, 104, 1.0) — and matching only the hex form recoloured its
+# COMMENTS while leaving the actual colours green (caught 2026-08-10). Both
+# notations are derived from the same hex so they can never drift apart.
+
+# hex6 -> "R, G, B"
+_rice_dec() { printf '%d, %d, %d' "0x${1:0:2}" "0x${1:2:2}" "0x${1:4:2}"; }
+
+# hex6 -> regex matching "R, G, B" with any spacing
+_rice_dec_re() { printf '%d,[[:space:]]*%d,[[:space:]]*%d' "0x${1:0:2}" "0x${1:2:2}" "0x${1:4:2}"; }
+
 # Where the recoloured mirror is built. Deliberately outside the repo.
 RICE_THEME_ROOT="${RICE_THEME_ROOT:-$HOME/.local/share/arch_rice-theme}"
 
@@ -40,6 +51,12 @@ rice_theme_build() {
     local accent2="${PROFILE_ACCENT2:-$RICE_CANON_ACCENT2}"
     local rel dest recoloured=0 linked=0
 
+    # Match hex AND decimal spellings of both canonical accents.
+    local dec1_re dec2_re detect
+    dec1_re="$(_rice_dec_re "$RICE_CANON_ACCENT")"
+    dec2_re="$(_rice_dec_re "$RICE_CANON_ACCENT2")"
+    detect="$RICE_CANON_ACCENT|$RICE_CANON_ACCENT2|$dec1_re|$dec2_re"
+
     rm -rf "$out"
     mkdir -p "$out"
 
@@ -49,8 +66,11 @@ rice_theme_build() {
 
         # -I makes grep treat binaries as non-matching, so PNGs/TTFs/SVGs fall
         # through to the symlink branch untouched.
-        if grep -qIiE "$RICE_CANON_ACCENT|$RICE_CANON_ACCENT2" "$RICE_ROOT/$rel" 2>/dev/null; then
-            sed -E "s/$RICE_CANON_ACCENT/$accent/Ig; s/$RICE_CANON_ACCENT2/$accent2/Ig" \
+        if grep -qIiE "$detect" "$RICE_ROOT/$rel" 2>/dev/null; then
+            sed -E "s/$RICE_CANON_ACCENT/$accent/Ig
+                    s/$RICE_CANON_ACCENT2/$accent2/Ig
+                    s/$dec1_re/$(_rice_dec "$accent")/g
+                    s/$dec2_re/$(_rice_dec "$accent2")/g" \
                 "$RICE_ROOT/$rel" > "$dest"
             [[ -x "$RICE_ROOT/$rel" ]] && chmod +x "$dest"
             recoloured=$((recoloured + 1))

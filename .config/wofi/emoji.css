@@ -1,34 +1,88 @@
-/* Emoji picker style — deliberately distinct from the ACRNM launcher:
-   green accent (#b5bd68), bigger glyphs, grid tiles. Used via `wofi --style` from
-   ~/.local/bin/emoji-picker (rofimoji). */
+/* Emoji picker style — deliberately IDENTICAL to the ACRNM launcher (style.css):
+   same palette, same square corners, same artwork strip, same #0a0a0a boxes.
+   Only the entry rule differs, because this is a 4-column grid of glyphs rather
+   than a list of text rows. Used via `wofi --style` from ~/.local/bin/emoji-picker.
+
+   Previously this was a separate rounded green theme; matching the launcher means
+   the accent here is #ffff78 like everywhere else, so the per-host recolour keeps
+   both surfaces in step (both become #ffa7ca on the pink profile). */
+
+* {
+  font-family: "Departure Mono", monospace;
+  font-size: 11px;
+  outline: none;
+  -gtk-secondary-caret-color: #ffff78;
+}
 
 window {
-  border: 3px solid #b5bd68;
-  border-radius: 14px;
-  background-color: #1d1f21;
-  font-family: "Noto Color Emoji", "Symbols Nerd Font Mono", monospace;
-  font-size: 20px;
-}
-
-#input {
-  margin: 10px;
-  padding: 8px 12px;
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  /* Absolute path on purpose — see the note in style.css: a relative url()
+     renders nothing here, with no CSS error. */
+  background-image: url("file:///home/user888/arch_rice/.config/rofi/themes/acrnm-vert.png");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 100px auto;
   border: none;
-  border-radius: 10px;
-  background-color: #282a2e;
-  color: #c5c8c6;
-  font-size: 14px;
 }
 
-#inner-box { margin: 8px; }
+#outer-box {
+  background-color: transparent;
+  padding: 24px 24px 24px 130px;  /* left = 100 logo + 30 gap, as in style.css */
+  margin: 0;
+}
 
+#input,
+#input:focus,
+#input:focus-within {
+  background-color: #0a0a0a;
+  color: #ffffff;
+  border: 1px solid #1a1a1a;
+  border-radius: 0;
+  padding: 8px 12px;
+  margin: 0 0 16px 0;
+  caret-color: #ffff78;
+  box-shadow: none;
+  outline: none;
+}
+
+#input selection,
+selection {
+  background-color: #ffff78;
+  color: #000000;
+}
+
+#inner-box {
+  background-color: #0a0a0a;
+  margin: 0;
+  border: 1px solid #1a1a1a;
+  border-radius: 0;
+}
+
+#scroll {
+  background-color: transparent;
+}
+
+/* Grid tiles. The glyph is the whole content (emoji-picker passes
+   --hidden-descriptions), so it gets its own font stack and a larger size. */
 #entry {
-  padding: 10px 8px;
-  margin: 3px;
-  border-radius: 10px;
+  background-color: transparent;
+  border-radius: 0;
+  padding: 10px 4px;
+  color: #ffffff;
+  font-family: "Noto Color Emoji", "Symbols Nerd Font Mono", monospace;
+  font-size: 22px;
 }
 
-#entry:selected { background-color: #b5bd68; }
-#entry:selected #text { color: #1d1f21; }
+#entry:selected {
+  background-color: #ffff78;
+}
 
-#text { color: #c5c8c6; }
+#entry:selected #text {
+  color: #000000;
+}
+
+#text {
+  color: #ffffff;
+}

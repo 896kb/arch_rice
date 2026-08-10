@@ -3,5 +3,15 @@
 # Action "type copy": types the glyph into native Wayland apps (wtype) AND copies it to
 # the clipboard — wtype's virtual-keyboard injection doesn't reach Chromium/Electron
 # (Brave) or XWayland apps, so in those just paste (Ctrl+V). Bound to Super+. (period).
-exec rofimoji --selector wofi --action type copy \
-  --selector-args "--conf $HOME/.config/wofi/emoji.conf --style $HOME/.config/wofi/emoji.css" "$@"
+# Selector is rofi, NOT wofi, purely to get the grid. rofimoji 6.7.0 declares
+# --hidden-descriptions for every selector but only rofi.py implements it —
+# wofi.py takes show_description and then calls basic_format_characters(), which
+# always emits "<char> <description>", so entries stay text-wide and a grid is
+# impossible. (Verified in .../picker/selector/wofi.py, 2026-08-10.)
+#
+# --use-icons + --hidden-descriptions makes rofi draw the glyph as the element
+# ICON with the description as hidden META: tiles show only the emoji, but typing
+# "laugh" still filters. rofi 2.0 is Wayland-native (no XWayland), and the theme
+# matches the wofi launcher so it doesn't look like a different app.
+exec rofimoji --selector rofi --action type copy --use-icons --hidden-descriptions \
+  --selector-args "-theme $HOME/.config/rofi/themes/acrnm-emoji.rasi" "$@"
