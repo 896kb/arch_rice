@@ -19,13 +19,20 @@ white = "#c5c8c6"
 yellow = "#F0C674"
 
 [colors.primary]
-background = "#ffffff"
+# Tomorrow Night's background rather than white. With `opacity` below this is
+# what tints whatever is behind the window — white lightened a light wallpaper
+# and left the grey foreground with nothing to sit against.
+background = "#1d1f21"
 bright_foreground = "#ffffff"
 foreground = "#c5c8c6"
 
 [colors.cursor]
-text = "#000000"
-cursor = "#000000"
+# Both were #000000, which only worked while `background` was white — against the
+# dark tint the cursor vanished entirely. Accent-coloured now, so it reads on any
+# wallpaper, and lib/theme.sh recolours it to pink on the Xiaomi like everything
+# else. `text` is the character UNDER the cursor, so it takes the dark shade.
+text = "#1d1f21"
+cursor = "#b5bd68"
 
 [font]
 size = 10
@@ -53,7 +60,10 @@ mods = "Control|Shift"
 
 [window]
 dynamic_padding = true
-opacity = 0.01
+# Just enough dark tint to keep text legible over a light wallpaper while
+# staying essentially see-through. This is the one number to tune: 0 is fully
+# transparent, 1 fully opaque.
+opacity = 0.2
 
 [window.padding]
 x = 15
