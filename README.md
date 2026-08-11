@@ -202,7 +202,9 @@ cd ~/arch_rice
 
 ## Fonts
 
-`Departure Mono` (UI), a Nerd Font + `ttf-nerd-fonts-symbols-mono` (glyphs), `noto-fonts-emoji` (emoji), the bundled `BudsExtra.ttf` (earbuds glyph); Terminus + Siji for the legacy polybar. `bibata-cursor-theme` is the base for the green cursor.
+`Departure Mono` (UI — AUR `otf-departure-mono`; **required**, everything from waybar to the lock screen names it and silently falls back to a generic monospace without it), `ttf-nerd-fonts-symbols-mono` (glyphs), `noto-fonts-emoji` (emoji), the bundled `BudsExtra.ttf` (earbuds glyph); Terminess + Siji for the legacy polybar. `bibata-cursor-theme` is the base for the green cursor.
+
+> Note: `ttf-terminus-nerd` provides the family **`Terminess Nerd Font`**, not `Terminus`. The legacy `alacritty.yml`, `polybar/config` and `minions.rasi` still ask for `Terminus`, which resolves to Noto Sans — harmless, since those configs are superseded.
 
 ## Credits
 

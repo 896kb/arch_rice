@@ -210,6 +210,10 @@ AUR_PACKAGES=(
     "ttf-unifont"
     "bibata-cursor-theme"          # base for the recolored green cursor (generated below)
     "alacritty-smooth-cursor-git"  # alacritty + smooth cursor motion patch; provides/conflicts 'alacritty'
+    # THE primary UI font — waybar, hyprlock, wofi, rofi, alacritty and the
+    # quickshell lock all specify "Departure Mono". Without it every one of them
+    # silently falls back to a generic monospace and the rice looks wrong.
+    "otf-departure-mono"
 )
 
 # Hardware-specific packages come from the host profile (profiles/<name>.sh).
