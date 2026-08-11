@@ -1,0 +1,11 @@
+# Deployed to /etc/pam.d/quickshell-lock by install.sh.
+#
+# Must live under /etc/pam.d rather than in the repo: PAM resolves `include`
+# relative to the config directory it was started with, so a repo-local stack
+# using `include login` would look for a `login` file next to it and fail the
+# whole conversation with PAM_SYSTEM_ERR.
+#
+# `include login` is what hyprlock and swaylock both ship, so the lock honours
+# the same policy as a console login (pam_unix, faillock, and anything else
+# configured — fingerprint, systemd-homed).
+auth include login

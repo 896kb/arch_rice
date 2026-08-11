@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Lock the session with the Quickshell lock, falling back to hyprlock if it
+# cannot start. Invoked by hypridle's lock_cmd (which is what `loginctl
+# lock-session`, Super+C, the idle timer and before_sleep all end up calling).
+#
+# Why a script instead of a one-liner in hypridle.conf:
+#
+#   pidof quickshell || quickshell -p ... || hyprlock
+#
+# is wrong twice. `pidof quickshell` matches ANY quickshell process, so the day
+# a quickshell bar or widget is running, locking would silently no-op and the
+# screen would stay unlocked. And `|| hyprlock` fires on any non-zero exit,
+# including one that happens after a successful unlock — re-locking you the
+# moment you get in.
+#
+# So: match the lock specifically, and only fall back when the lock dies
+# EARLY, which means it failed to come up rather than having been unlocked.
+
+set -u
+
+LOCK_QML="$HOME/.config/quickshell/lock/shell.qml"
+LOCK_PATTERN="quickshell -p .*/lock/shell.qml"
+
+# Already locked? hypridle can fire lock_cmd more than once (idle timer racing
+# before_sleep, for example) and a second lock surface would stack.
+if pgrep -f "$LOCK_PATTERN" >/dev/null 2>&1; then
+    exit 0
+fi
+
+fallback() {
+    echo "lock-session: falling back to hyprlock ($1)" >&2
+    exec hyprlock
+}
+
+if ! command -v quickshell >/dev/null 2>&1 || [ ! -f "$LOCK_QML" ]; then
+    fallback "quickshell or its config is missing"
+fi
+
+start=$SECONDS
+quickshell -p "$LOCK_QML"
+rc=$?
+elapsed=$(( SECONDS - start ))
+
+# A clean unlock exits 0. A non-zero exit within a couple of seconds means the
+# lock never really came up (QML error, missing PAM service, no compositor
+# support) and the session would otherwise be left UNLOCKED — so fail closed.
+if [ "$rc" -ne 0 ] && [ "$elapsed" -lt 2 ]; then
+    fallback "exited $rc after ${elapsed}s"
+fi
+
+exit 0

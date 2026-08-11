@@ -69,6 +69,17 @@ source "$SCRIPT_DIR/lib/profile.sh"
 source "$SCRIPT_DIR/lib/theme.sh"
 rice_load_profile
 
+# Deploy the lock screen's PAM stack. Must live in /etc/pam.d: PAM resolves
+# `include` against the config directory it was started with, so a repo-local
+# stack using "include login" fails with PAM_SYSTEM_ERR. Same approach hyprlock
+# and swaylock take. Without this the lock cannot authenticate at all.
+rice_install_pam_lock() {
+    if [[ -f "$SCRIPT_DIR/system/pam-quickshell-lock" ]]; then
+        sudo install -Dm644 "$SCRIPT_DIR/system/pam-quickshell-lock" /etc/pam.d/quickshell-lock \
+            && print_success "PAM stack installed (/etc/pam.d/quickshell-lock)"
+    fi
+}
+
 # Deploy system/nvidia-pm.conf — called from profiles with the nvidia_prime feature.
 rice_install_nvidia_pm() {
     if [[ -f "$SCRIPT_DIR/system/nvidia-pm.conf" ]]; then
@@ -164,8 +175,14 @@ PACMAN_PACKAGES=(
 
     # --- Hyprland/Wayland session ---
     "wofi"                        # app launcher ($menu in hyprland.conf)
-    "hyprlock"                    # styled lock screen
+    "hyprlock"                    # fallback lock screen (kept: the quickshell lock is newer)
     "hypridle"                    # idle daemon: locks before sleep (password on wake) + dpms
+    # Quickshell lock screen — hyprlock can't play video, so the lock surface is
+    # our own QML (.config/quickshell/lock). ffmpeg backend decodes the clip.
+    "quickshell"
+    "qt6-multimedia"
+    "gst-plugins-good"
+    "gst-libav"
     "grim"                        # screenshots (pen-screenshotd, camera widgets)
     "slurp"                       # region select
     "wl-clipboard"                # wl-copy (cam-clip)
@@ -270,6 +287,7 @@ CONFIG_DIRS=(
     "nvim"
     "picom"
     "polybar"
+    "quickshell"
     "ranger"
     "rofi"
     "tmux"
@@ -446,6 +464,9 @@ print_status "Configuring system services..."
 # bluetooth (earbuds) + AVRCP<->MPRIS bridge (single-tap play/pause on the buds)
 sudo systemctl enable --now bluetooth.service 2>/dev/null && print_success "bluetooth enabled"
 systemctl --user enable --now mpris-proxy.service 2>/dev/null && print_success "mpris-proxy (user) enabled"
+
+# Lock screen PAM stack — needed on every host, not profile-specific.
+rice_install_pam_lock
 
 # Everything hardware-specific (keyd, NVIDIA power management, power daemons)
 # is done by the profile's own hook.

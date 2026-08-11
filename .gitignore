@@ -28,6 +28,8 @@
 !.config/nvim/**/*
 !.config/waybar
 !.config/waybar/**/*
+!.config/quickshell
+!.config/quickshell/**/*
 !.config/wofi
 !.config/wofi/**/*
 !.config/hypr
