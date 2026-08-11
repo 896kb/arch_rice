@@ -428,7 +428,9 @@ fi
 
 # Deploy background images
 if [ -d "$DEPLOY_ROOT/.config" ]; then
-    for bg in "$DEPLOY_ROOT/.config"/background.*; do
+    # background* not background.* — per-host wallpapers are named
+    # background-<profile>.jpg and would otherwise be skipped.
+    for bg in "$DEPLOY_ROOT/.config"/background*; do
         if [ -f "$bg" ]; then
             filename=$(basename "$bg")
             ln -sf "$bg" "$HOME/.config/$filename"

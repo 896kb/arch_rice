@@ -36,6 +36,8 @@
 !.config/hypr/**/*
 !.config/background.jpg
 !.config/background.png
+# per-host wallpapers: background-<profile>.<ext>
+!.config/background-*
 !.local/
 !.local/bin
 !.local/bin/**/*
