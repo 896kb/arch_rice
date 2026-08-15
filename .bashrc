@@ -17,6 +17,9 @@ export PATH=$BUN_INSTALL/bin:$PATH
 # rootless podman docker socket (for Encore and other docker-aware tools)
 export DOCKER_HOST="unix:///run/user/$(id -u)/podman/podman.sock"
 
+export ENCORE_INSTALL="/home/user888/.encore"
+export PATH="$ENCORE_INSTALL/bin:$PATH"
+
 # view images inline as colored block/symbol art (works in any terminal, incl. alacritty)
 # usage: img photo.png   |   img *.jpg   |   curl -s URL | img -
 img() { chafa "$@"; }

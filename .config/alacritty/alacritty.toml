@@ -60,10 +60,10 @@ mods = "Control|Shift"
 
 [window]
 dynamic_padding = true
-# Just enough dark tint to keep text legible over a light wallpaper while
-# staying essentially see-through. This is the one number to tune: 0 is fully
-# transparent, 1 fully opaque.
-opacity = 0.2
+# Dark tint over the wallpaper. Shared by both machines deliberately — this is a
+# legibility setting, not a per-host aesthetic, so it is not in the profile
+# fragments. The one number to tune: 0 fully transparent, 1 fully opaque.
+opacity = 0.6
 
 [window.padding]
 x = 15
