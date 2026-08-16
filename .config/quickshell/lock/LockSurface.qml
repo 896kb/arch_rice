@@ -7,7 +7,6 @@
 // becomes pink on the Xiaomi automatically — no per-host QML, no extra machinery.
 
 import QtQuick
-import QtMultimedia
 import Quickshell
 
 Item {
@@ -42,66 +41,37 @@ Item {
         color: root.fieldBg
     }
 
-    // The video is loaded LAZILY and off the critical path. Measured on the Z13:
-    // a bare QML window appears in 314ms, but instantiating QtMultimedia and
-    // letting ffmpeg open the clip costs ~3.4s — which was the whole "Super+C
-    // takes a couple of seconds" delay, since the surface couldn't paint until
-    // the media stack was ready. Deferring it means the lock appears essentially
-    // as fast as hyprlock did and the clip fades in a moment later over the
-    // solid backdrop above. The screen is genuinely locked the whole time.
-    Loader {
-        id: videoLoader
+    // Deliberately an AnimatedImage (GIF), NOT QtMultimedia. Measured on the Z13:
+    // instantiating MediaPlayer loads the QtMultimedia plugin on the MAIN THREAD
+    // and blocked it for 3302ms — a 50ms timer did not fire once in that window,
+    // so the surface could not repaint AND typed keystrokes just queued in the
+    // Wayland socket until it unblocked. That was the whole "why can't I type
+    // while the video loads" problem. Loader{asynchronous:true} does not help:
+    // it defers QML compilation, not native plugin loading.
+    //
+    // AnimatedImage uses QtQuick's own image pipeline instead. Measured ready at
+    // 112ms with ZERO blocking, so the lock is interactive and already showing
+    // motion from the first frame — no grey wait, no swallowed keystrokes.
+    // The cost is file size: GIF at 128 colours. Pixel art is the ideal case for
+    // that, being flat colour areas with a small palette.
+    AnimatedImage {
+        id: backdrop
         anchors.fill: parent
-        asynchronous: true
-        active: false
-        sourceComponent: videoComponent
 
-        // One event-loop turn is enough to guarantee the lock UI paints first.
-        Timer {
-            interval: 1
-            running: true
-            onTriggered: videoLoader.active = true
-        }
-    }
+        // Per-machine clip. The profile's Hyprland fragment sets RICE_LOCK_ANIM
+        // (see .config/hypr/profile.d/), which the compositor exports into the
+        // session so hypridle's child inherits it. Falls back to the Z13 clip.
+        source: Qt.resolvedUrl(Quickshell.env("RICE_LOCK_ANIM") ?? "lock-z13.gif")
 
-    Component {
-        id: videoComponent
+        // Crop rather than letterbox, so an unexpected panel aspect never bars.
+        fillMode: Image.PreserveAspectCrop
+        playing: true
+        cache: false
 
-        Item {
-            // Which clip to play is per-machine. The profile's Hyprland fragment
-            // sets RICE_LOCK_VIDEO (see .config/hypr/profile.d/), which the
-            // compositor exports into the session so hypridle's child inherits
-            // it. Falls back to the Z13 clip if unset.
-            property alias player: mediaPlayer
-
-            MediaPlayer {
-                id: mediaPlayer
-                source: Qt.resolvedUrl(Quickshell.env("RICE_LOCK_VIDEO") ?? "lock-z13.mp4")
-                loops: MediaPlayer.Infinite
-                videoOutput: videoOut
-                Component.onCompleted: play()
-            }
-
-            VideoOutput {
-                id: videoOut
-                anchors.fill: parent
-                // Clips are pre-encoded 16:10 to match the panels, but crop
-                // rather than letterbox so an odd resolution never shows bars.
-                fillMode: VideoOutput.PreserveAspectCrop
-
-                // The clips are pixel art stored at HALF panel resolution
-                // (1280x800 for the Z13's 2560x1600, 1440x900 for 2880x1800),
-                // so the upscale is an exact 2x. smooth:false asks for
-                // nearest-neighbour, which keeps the pixel blocks hard instead
-                // of interpolating them into mush. Storing them small cut the
-                // two clips from 1.6M to 692K and roughly quarters the decode
-                // work. If Qt ignores this on your driver the result is merely
-                // slightly soft, never broken.
-                smooth: false
-                opacity: mediaPlayer.playbackState === MediaPlayer.PlayingState ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 250 } }
-            }
-        }
+        // Stored at 640x400: an exact 4x upscale to the Z13's 2560x1600 and an
+        // exact 6x to the Xiaomi's 3840x2400. smooth:false keeps the pixel
+        // blocks hard rather than interpolating them into mush.
+        smooth: false
     }
 
     // Suspend/resume: the whole system freezes, but the media pipeline's
@@ -125,13 +95,11 @@ Item {
         onTriggered: {
             const now = Date.now();
             if (now - lastTick > gapThresholdMs) {
-                const p = videoLoader.item ? videoLoader.item.player : null;
-                if (p) {
-                    console.log("lock: resumed after " + Math.round((now - lastTick) / 1000)
-                                + "s gap — restarting playback");
-                    p.stop();
-                    p.play();
-                }
+                console.log("lock: resumed after " + Math.round((now - lastTick) / 1000)
+                            + "s gap — restarting animation");
+                backdrop.playing = false;
+                backdrop.currentFrame = 0;
+                backdrop.playing = true;
             }
             lastTick = now;
         }

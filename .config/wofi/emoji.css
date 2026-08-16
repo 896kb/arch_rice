@@ -20,7 +20,7 @@ window {
   background-color: transparent;
   /* Absolute path on purpose — see the note in style.css: a relative url()
      renders nothing here, with no CSS error. */
-  background-image: url("file:///home/user888/arch_rice/.config/rofi/themes/acrnm-vert.png");
+  background-image: url("file://@@RICE_ROOT@@/.config/rofi/themes/acrnm-vert.png");
   background-repeat: no-repeat;
   background-position: left center;
   background-size: 100px auto;

@@ -25,12 +25,15 @@ window {
   margin: 0;
   padding: 0;
   background-color: transparent;
-  /* Absolute on purpose: wofi loads this stylesheet in a way that does NOT resolve
-     relative url() against the file's own directory (verified 2026-08-10 — a
-     "../rofi/themes/..." path silently renders nothing, no CSS error). This means
-     the artwork only appears when the repo is cloned to ~/arch_rice under the same
-     username. If either ever changes, update this line. */
-  background-image: url("file:///home/user888/arch_rice/.config/rofi/themes/acrnm-vert.png");
+  /* @@RICE_ROOT@@ is substituted with the repo's real path at deploy time by
+     lib/theme.sh — install.sh resolves it with cd+pwd, so this works under any
+     username or clone location.
+     It must end up ABSOLUTE: wofi loads this stylesheet without a base URI, so a
+     relative url() has nothing to resolve against and fails SILENTLY (verified
+     2026-08-10 — "../rofi/themes/..." renders nothing, with no CSS error). GTK
+     does not expand ~ either. rofi's .rasi has no such problem because it is
+     rofi's own format and rofi expands ~ itself. */
+  background-image: url("file://@@RICE_ROOT@@/.config/rofi/themes/acrnm-vert.png");
   background-repeat: no-repeat;
   background-position: left center;
   background-size: 100px auto;

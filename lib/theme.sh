@@ -21,6 +21,17 @@
 RICE_CANON_ACCENT="b5bd68"
 RICE_CANON_ACCENT2="ffff78"
 
+# Placeholder for the repo's absolute path, substituted at deploy time with the
+# real location (install.sh resolves it with cd+pwd).
+#
+# Needed because GTK CSS cannot express "next to this stylesheet": wofi loads its
+# stylesheet without a base URI, so a relative url() has nothing to resolve
+# against and fails SILENTLY — no error, just no image. GTK does not expand ~
+# either. rofi has no such problem: .rasi is rofi's own format and it expands ~
+# itself. So wofi needs a real absolute path, and this is how it gets one without
+# hardcoding a username.
+RICE_ROOT_TOKEN="@@RICE_ROOT@@"
+
 # Not every config spells colours in hex. hyprlock.conf uses decimal tuples —
 # rgba(181, 189, 104, 1.0) — and matching only the hex form recoloured its
 # COMMENTS while leaving the actual colours green (caught 2026-08-10). Both
@@ -35,8 +46,12 @@ _rice_dec_re() { printf '%d,[[:space:]]*%d,[[:space:]]*%d' "0x${1:0:2}" "0x${1:2
 # Where the recoloured mirror is built. Deliberately outside the repo.
 RICE_THEME_ROOT="${RICE_THEME_ROOT:-$HOME/.local/share/arch_rice-theme}"
 
-# True when this profile uses the committed colours, i.e. no mirror is needed
-# and the repo can be deployed directly (the Z13 path — zero behaviour change).
+# True when this profile uses the committed colours. The mirror is built either
+# way now (the path token needs substituting on every host), but on a canonical
+# profile ONLY token-bearing files get materialised — everything else stays a
+# symlink into the repo, so editing hyprland.conf, waybar/style.css and the rest
+# is still live. Currently that means 2 materialised files here versus 17 on a
+# recoloured host.
 rice_theme_is_canonical() {
     [[ "${PROFILE_ACCENT:-$RICE_CANON_ACCENT}"   == "$RICE_CANON_ACCENT" ]] &&
     [[ "${PROFILE_ACCENT2:-$RICE_CANON_ACCENT2}" == "$RICE_CANON_ACCENT2" ]]
@@ -51,11 +66,16 @@ rice_theme_build() {
     local accent2="${PROFILE_ACCENT2:-$RICE_CANON_ACCENT2}"
     local rel dest recoloured=0 linked=0
 
-    # Match hex AND decimal spellings of both canonical accents.
+    # A file is materialised only if it has something to substitute. The path
+    # token always counts; the accents only when this host isn't canonical.
+    # Anything else stays a symlink into the repo and remains live-editable.
     local dec1_re dec2_re detect
     dec1_re="$(_rice_dec_re "$RICE_CANON_ACCENT")"
     dec2_re="$(_rice_dec_re "$RICE_CANON_ACCENT2")"
-    detect="$RICE_CANON_ACCENT|$RICE_CANON_ACCENT2|$dec1_re|$dec2_re"
+    detect="$RICE_ROOT_TOKEN"
+    if ! rice_theme_is_canonical; then
+        detect="$detect|$RICE_CANON_ACCENT|$RICE_CANON_ACCENT2|$dec1_re|$dec2_re"
+    fi
 
     rm -rf "$out"
     mkdir -p "$out"
@@ -67,10 +87,12 @@ rice_theme_build() {
         # -I makes grep treat binaries as non-matching, so PNGs/TTFs/SVGs fall
         # through to the symlink branch untouched.
         if grep -qIiE "$detect" "$RICE_ROOT/$rel" 2>/dev/null; then
+            # | as the delimiter for the token line: the replacement is a path.
             sed -E "s/$RICE_CANON_ACCENT/$accent/Ig
                     s/$RICE_CANON_ACCENT2/$accent2/Ig
                     s/$dec1_re/$(_rice_dec "$accent")/g
-                    s/$dec2_re/$(_rice_dec "$accent2")/g" \
+                    s/$dec2_re/$(_rice_dec "$accent2")/g
+                    s|$RICE_ROOT_TOKEN|$RICE_ROOT|g" \
                 "$RICE_ROOT/$rel" > "$dest"
             [[ -x "$RICE_ROOT/$rel" ]] && chmod +x "$dest"
             recoloured=$((recoloured + 1))

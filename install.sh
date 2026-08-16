@@ -45,6 +45,7 @@ usage() {
 Usage: $(basename "$0") [--profile=<name>] [--list-profiles]
 
   --profile=<name>   force a host profile instead of autodetecting
+  --links-only       skip package installation, just rebuild + redeploy configs
   --list-profiles    show available profiles and exit
 
 Profiles are autodetected from DMI, or pinned by writing the name into
@@ -52,9 +53,12 @@ Profiles are autodetected from DMI, or pinned by writing the name into
 EOF
 }
 
+LINKS_ONLY=0
+
 for arg in "$@"; do
     case "$arg" in
         --profile=*)   RICE_PROFILE="${arg#*=}"; export RICE_PROFILE ;;
+        --links-only)  LINKS_ONLY=1 ;;
         --list-profiles)
             (cd "$SCRIPT_DIR/profiles" && ls *.sh | sed 's/\.sh$//')
             exit 0 ;;
@@ -178,11 +182,11 @@ PACMAN_PACKAGES=(
     "hyprlock"                    # fallback lock screen (kept: the quickshell lock is newer)
     "hypridle"                    # idle daemon: locks before sleep (password on wake) + dpms
     # Quickshell lock screen — hyprlock can't play video, so the lock surface is
-    # our own QML (.config/quickshell/lock). ffmpeg backend decodes the clip.
+    # our own QML (.config/quickshell/lock). The backdrop is an animated GIF via
+    # QtQuick's built-in image pipeline, NOT QtMultimedia: loading that plugin
+    # blocks the main thread ~3.3s, freezing the lock and swallowing keystrokes.
+    # So qt6-multimedia/gstreamer are deliberately NOT dependencies.
     "quickshell"
-    "qt6-multimedia"
-    "gst-plugins-good"
-    "gst-libav"
     "grim"                        # screenshots (pen-screenshotd, camera widgets)
     "slurp"                       # region select
     "wl-clipboard"                # wl-copy (cam-clip)
@@ -220,7 +224,10 @@ AUR_PACKAGES=(
 PACMAN_PACKAGES+=("${PROFILE_PACMAN[@]}")
 AUR_PACKAGES+=("${PROFILE_AUR[@]}")
 
-# Install pacman packages
+# Install packages (skipped by --links-only)
+if [[ "$LINKS_ONLY" -eq 1 ]]; then
+    print_status "--links-only: skipping package installation"
+else
 print_status "Installing packages from official repositories..."
 sudo pacman -S --needed --noconfirm "${PACMAN_PACKAGES[@]}" || {
     print_warning "Some packages may have failed, continuing..."
@@ -261,20 +268,26 @@ else
     print_warning "Skipping AUR packages (no AUR helper)"
     print_warning "Install manually: ${AUR_PACKAGES[*]}"
 fi
+fi  # end of LINKS_ONLY guard
 
-# --- accent theming --------------------------------------------------------
-# A profile with non-canonical accents gets a recoloured mirror of .config/ and
-# .local/, and everything below deploys from there instead of straight out of
-# the repo. Canonical profiles skip this entirely.
+# --- theming + path substitution --------------------------------------------
+# Everything deploys from a mirror of .config/ and .local/ rather than straight
+# out of the repo, on EVERY host — because @@RICE_ROOT@@ has to be replaced with
+# this checkout's real path (resolved by cd+pwd into SCRIPT_DIR) for wofi's
+# stylesheets, which cannot express a relative image path.
+#
+# In that mirror a file is only materialised if it actually has something to
+# substitute; everything else is a symlink back into the repo and stays live to
+# edit. On a canonical host that is just the 2 token-bearing files, so editing
+# hyprland.conf or waybar/style.css is as immediate as it ever was.
 if rice_theme_is_canonical; then
-    DEPLOY_ROOT="$SCRIPT_DIR"
-    print_status "Accent: canonical (#${PROFILE_ACCENT}) — deploying repo directly"
+    print_status "Accent: canonical (#${PROFILE_ACCENT}) — substituting paths only"
 else
-    print_status "Accent: #${PROFILE_ACCENT} / #${PROFILE_ACCENT2} — building recoloured mirror"
-    stats="$(rice_theme_build "$RICE_THEME_ROOT")"
-    DEPLOY_ROOT="$RICE_THEME_ROOT"
-    print_success "Theme mirror at $RICE_THEME_ROOT ($stats)"
+    print_status "Accent: #${PROFILE_ACCENT} / #${PROFILE_ACCENT2} — recolouring + paths"
 fi
+stats="$(rice_theme_build "$RICE_THEME_ROOT")"
+DEPLOY_ROOT="$RICE_THEME_ROOT"
+print_success "Deploy tree at $RICE_THEME_ROOT ($stats)"
 
 # Deploy config files
 print_status "Deploying configuration files..."

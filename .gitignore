@@ -38,6 +38,8 @@
 !.config/background.png
 # per-host wallpapers: background-<profile>.<ext>
 !.config/background-*
+# the bare ACRNM glyph, source for the wallpaper marks (tools/build-assets.sh)
+!.config/acrnm-mark.png
 !.local/
 !.local/bin
 !.local/bin/**/*
@@ -55,6 +57,8 @@
 # host-profile machinery
 !lib/
 !lib/**/*
+!tools/
+!tools/**/*
 !profiles/
 !profiles/**/*
 !system/
