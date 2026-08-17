@@ -43,6 +43,10 @@ PROFILE_ACCENT="ff5f9e"
 PROFILE_ACCENT2="ffa7ca"
 PROFILE_CURSOR_THEME="Bibata-Modern-Pink"
 
+# Lock screen: bright train-bridge clip, meant to be seen undimmed.
+PROFILE_LOCK_ANIM="lock-xiaomi.gif"
+PROFILE_LOCK_DIM="0"
+
 # Z13-only tooling: tablet/pen/rotation, IPU6 rear camera, ASUS platform.
 PROFILE_BIN_EXCLUDE=(
     # accelerometer / tablet

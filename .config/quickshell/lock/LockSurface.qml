@@ -14,20 +14,20 @@ Item {
 
     required property var context
 
+    // Per-host clip and dim, resolved at DEPLOY time by install.sh — see
+    // LockProfile.qml. These were environment variables set by the Hyprland
+    // profile fragment, but `env =` only applies at SESSION START: deploying
+    // inside a live session left them unset and the lock silently fell back to
+    // the Z13's clip, on the Xiaomi, with no error.
+    LockProfile { id: lockProfile }
+
     // --- knobs -------------------------------------------------------------
-    // hyprlock dimmed its still wallpaper to brightness 0.55 and blurred it hard.
-    // A video wants to be seen, so this only dims enough to keep text legible —
-    // and how much that needs to be depends entirely on the clip. The Z13's
-    // bus-stop scene is dark and wants none of the widgets fighting it; the
-    // Xiaomi's train-bridge clip is bright and is set to 0 (no dim at all).
-    // Set per host via RICE_LOCK_DIM in .config/hypr/profile.d/<profile>.conf.
-    readonly property real backgroundDim: {
-        const v = Quickshell.env("RICE_LOCK_DIM");
-        if (v === null || v === undefined || v === "")
-            return 0.45;
-        const n = parseFloat(v);
-        return isNaN(n) ? 0.45 : Math.max(0, Math.min(1, n));
-    }
+    // hyprlock dimmed its still wallpaper to 0.55 brightness and blurred it hard.
+    // An animation wants to be seen, so this only dims enough to keep text
+    // legible, and how much that is depends entirely on the clip: the Z13's
+    // bus-stop scene is dark and takes 0.45, the Xiaomi's train-bridge clip is
+    // bright and takes 0.
+    readonly property real backgroundDim: Math.max(0, Math.min(1, lockProfile.dim))
     readonly property color accent: "#b5bd68"
     readonly property color fieldBg: "#1d1f21"
     readonly property color failColor: "#cc6666"
@@ -58,10 +58,8 @@ Item {
         id: backdrop
         anchors.fill: parent
 
-        // Per-machine clip. The profile's Hyprland fragment sets RICE_LOCK_ANIM
-        // (see .config/hypr/profile.d/), which the compositor exports into the
-        // session so hypridle's child inherits it. Falls back to the Z13 clip.
-        source: Qt.resolvedUrl(Quickshell.env("RICE_LOCK_ANIM") ?? "lock-z13.gif")
+        // Per-machine clip, resolved relative to this directory.
+        source: Qt.resolvedUrl(lockProfile.anim)
 
         // Crop rather than letterbox, so an unexpected panel aspect never bars.
         fillMode: Image.PreserveAspectCrop

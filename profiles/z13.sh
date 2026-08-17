@@ -36,6 +36,10 @@ PROFILE_ACCENT="b5bd68"
 PROFILE_ACCENT2="ffff78"
 PROFILE_CURSOR_THEME="Bibata-Modern-Green"
 
+# Lock screen: dark bus-stop clip, so a light dim keeps the clock readable.
+PROFILE_LOCK_ANIM="lock-z13.gif"
+PROFILE_LOCK_DIM="0.45"
+
 # Everything in .local/bin deploys here — this is the machine they were written for.
 PROFILE_BIN_EXCLUDE=()
 

@@ -16,6 +16,9 @@ PROFILE_ACCENT="b5bd68"
 PROFILE_ACCENT2="ffff78"
 PROFILE_CURSOR_THEME="Bibata-Modern-Green"
 
+PROFILE_LOCK_ANIM="lock-z13.gif"
+PROFILE_LOCK_DIM="0.45"
+
 PROFILE_BIN_EXCLUDE=(
     auto-rotate
     touch-gestures
