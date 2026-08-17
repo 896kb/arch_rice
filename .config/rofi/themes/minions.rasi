@@ -4,7 +4,7 @@
 }
 
 window {
-  font: "Terminus Bold 15";
+  font: "Terminess Nerd Font Bold 15";
   orientation: horizontal;
   width: 800;
   height: 400;
