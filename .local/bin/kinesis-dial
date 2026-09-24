@@ -10,5 +10,5 @@ case "$1 $2" in
     "brightness down") exec "$HOME/.local/bin/rocker" bright-down ;;
     *) echo "usage: kinesis-dial {volume|brightness} {up|down}" >&2; exit 2 ;;
 esac
-v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2*100)}')
+v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{printf "%d", $2*100+0.5}')
 "$OSD" vol "󰕾  ${v}%" "$v"
