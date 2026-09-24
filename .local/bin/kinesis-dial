@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# One pinch-dial step for kinesisd, with the rice's OSD.
+#   kinesis-dial volume up|down
+#   kinesis-dial brightness up|down
+OSD="$HOME/.local/bin/osd"
+case "$1 $2" in
+    "volume up")   wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 2%+ ;;
+    "volume down") wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%- ;;
+    "brightness up")   exec "$HOME/.local/bin/rocker" bright-up ;;
+    "brightness down") exec "$HOME/.local/bin/rocker" bright-down ;;
+    *) echo "usage: kinesis-dial {volume|brightness} {up|down}" >&2; exit 2 ;;
+esac
+v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2*100)}')
+"$OSD" vol "󰕾  ${v}%" "$v"

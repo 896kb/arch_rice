@@ -5,6 +5,7 @@
 {
     "modules-right": [
         "custom/rearcam",
+        "custom/kinesis",
         "custom/earbuds",
         "disk",
         "custom/backlight",
@@ -22,5 +23,17 @@
         "interval": 2,
         "on-click": "~/.local/bin/rearcam-bridge toggle",
         "format": "{}"
+    },
+
+    // Meta Neural Band (kinesisd) — status/battery, click connect/disconnect,
+    // right-click pause, middle-click dial volume<->brightness
+    "custom/kinesis": {
+        "exec": "~/.cargo/bin/kinesisctl status --waybar --follow",
+        "return-type": "json",
+        "format": "{}",
+        "on-click": "~/.cargo/bin/kinesisctl toggle-connection",
+        "on-click-right": "~/.cargo/bin/kinesisctl toggle",
+        "on-click-middle": "~/.cargo/bin/kinesisctl dial cycle",
+        "tooltip": true
     }
 }

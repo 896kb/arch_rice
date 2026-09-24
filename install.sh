@@ -507,6 +507,25 @@ else
     print_warning "no waybar fragment for profile '$RICE_PROFILE'"
 fi
 
+# --- Meta Neural Band (kinesis-linux submodule) -------------------------------
+rice_install_kinesis() {
+    local src="$RICE_ROOT/kinesis-linux"
+    [ -f "$src/Cargo.toml" ] || { print_warning "kinesis-linux submodule missing (git submodule update --init)"; return 0; }
+    command -v cargo >/dev/null || { print_warning "cargo not found — skipping kinesis-linux"; return 0; }
+    print_status "Building kinesisd + kinesisctl (cargo install)..."
+    cargo install --locked --path "$src/kinesisd" && cargo install --locked --path "$src/kinesisctl" \
+        && print_success "kinesisd + kinesisctl installed" \
+        || print_warning "kinesis-linux build failed, continuing..."
+    mkdir -p "$HOME/.config/systemd/user" "$HOME/.config/kinesis"
+    ln -sf "$src/contrib/kinesisd.service" "$HOME/.config/systemd/user/kinesisd.service"
+    ln -sf "$DEPLOY_ROOT/.config/kinesis/config.toml" "$HOME/.config/kinesis/config.toml"
+    systemctl --user daemon-reload 2>/dev/null || true
+    print_success "kinesisd unit linked (started by Hyprland exec-once; pair with: kinesisctl pair)"
+}
+if rice_has_feature neural_band; then
+    rice_install_kinesis
+fi
+
 # --- system services + tweaks -----------------------------------------------
 print_status "Configuring system services..."
 

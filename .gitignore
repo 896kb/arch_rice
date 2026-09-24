@@ -75,3 +75,7 @@
 # kinesis-linux (Meta Neural Band controller) — git submodule, see README
 !.gitmodules
 !kinesis-linux
+
+# kinesis-linux (Neural Band) config
+!.config/kinesis
+!.config/kinesis/**/*

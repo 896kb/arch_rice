@@ -1,0 +1,25 @@
+# kinesisd — Meta Neural Band gestures on the Z13 (see kinesis-linux/contrib/config.toml for every key).
+# Reloaded on save.
+
+[band]
+hand = "band"
+autostart = true
+
+[gestures]
+swipe_left    = "hyprctl dispatch workspace e-1"
+swipe_right   = "hyprctl dispatch workspace e+1"
+swipe_up      = "hyprctl dispatch exec 'wofi --show drun'"
+swipe_down    = "hyprctl dispatch sendshortcut , Escape, activewindow"
+index_double  = "playerctl play-pause"
+middle_double = "~/.local/bin/audio-mute sink"
+index_tap     = ""
+middle_tap    = ""
+middle_hold   = ""
+
+[dial]
+target = "volume"
+sensitivity = 1.0
+volume_up       = "~/.local/bin/kinesis-dial volume up"
+volume_down     = "~/.local/bin/kinesis-dial volume down"
+brightness_up   = "~/.local/bin/kinesis-dial brightness up"
+brightness_down = "~/.local/bin/kinesis-dial brightness down"

@@ -12,6 +12,7 @@ PROFILE_FEATURES=(
     tablet            # accelerometer rotation, pen, on-screen keyboard, gestures
     earbuds           # Xiaomi Buds 6 widget + daemon
     backlight
+    neural_band       # Meta Neural Band via kinesis-linux (kinesisd + kinesisctl)
 )
 
 PROFILE_PACMAN=(
