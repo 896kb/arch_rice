@@ -1,0 +1,3 @@
+[submodule "kinesis-linux"]
+	path = kinesis-linux
+	url = https://gitlab.com/896kb/kinesis-linux.git

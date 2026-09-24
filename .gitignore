@@ -71,3 +71,7 @@
 .config/nvim/.luarc.json
 .config/nvim/.neoconf.json
 
+
+# kinesis-linux (Meta Neural Band controller) — git submodule, see README
+!.gitmodules
+!kinesis-linux
