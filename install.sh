@@ -513,9 +513,15 @@ rice_install_kinesis() {
     [ -f "$src/Cargo.toml" ] || { print_warning "kinesis-linux submodule missing (git submodule update --init)"; return 0; }
     command -v cargo >/dev/null || { print_warning "cargo not found — skipping kinesis-linux"; return 0; }
     print_status "Building kinesisd + kinesisctl (cargo install)..."
+    # rustup without a default toolchain still provides a `cargo` shim.
+    rustup default >/dev/null 2>&1 || rustup default stable >/dev/null 2>&1 || true
     cargo install --locked --path "$src/kinesisd" && cargo install --locked --path "$src/kinesisctl" \
         && print_success "kinesisd + kinesisctl installed" \
         || print_warning "kinesis-linux build failed, continuing..."
+    if [ ! -x "$HOME/.cargo/bin/kinesisd" ]; then
+        print_warning "kinesisd isn't installed — skipping its unit and config (rerun install.sh after fixing the build)"
+        return 0
+    fi
     mkdir -p "$HOME/.config/systemd/user" "$HOME/.config/kinesis"
     ln -sf "$src/contrib/kinesisd.service" "$HOME/.config/systemd/user/kinesisd.service"
     ln -sf "$DEPLOY_ROOT/.config/kinesis/config.toml" "$HOME/.config/kinesis/config.toml"

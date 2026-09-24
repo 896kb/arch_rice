@@ -22,6 +22,9 @@ PROFILE_PACMAN=(
     "v4l2loopback-dkms"           # rear IPU6 camera -> browser loopback
     "linux-headers"               # build the v4l2loopback dkms module
     "python-evdev"                # pen-screenshotd
+    # Meta Neural Band (kinesis-linux, built from source by install.sh)
+    "rustup"                      # cargo/rustc toolchain
+    "webkit2gtk-4.1"              # kinesisctl Meta sign-in window
 )
 
 PROFILE_AUR=(
