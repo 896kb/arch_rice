@@ -8,7 +8,7 @@ autostart = true
 [gestures]
 swipe_left    = "hyprctl dispatch workspace e-1"
 swipe_right   = "hyprctl dispatch workspace e+1"
-swipe_up      = "hyprctl dispatch exec 'wofi --show drun'"
+swipe_up      = "pkill -x wofi || hyprctl dispatch exec 'wofi --show drun'"   # toggles
 swipe_down    = "hyprctl dispatch sendshortcut , Escape, activewindow"
 index_double  = "playerctl play-pause"
 middle_double = "~/.local/bin/audio-mute sink"
