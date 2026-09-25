@@ -12,9 +12,9 @@ swipe_left    = "hyprctl dispatch workspace e-1"
 swipe_right   = "hyprctl dispatch workspace e+1"
 swipe_up      = "pkill -x wofi || hyprctl dispatch exec 'wofi --show drun'"   # toggles
 swipe_down    = "hyprctl dispatch sendshortcut , Escape, activewindow"
-index_double  = "playerctl play-pause"
+index_double  = "~/.local/bin/kinesis-dial toggle"   # dial: volume <-> brightness
 middle_double = "~/.local/bin/audio-mute sink"
-index_tap     = "~/.local/bin/kinesis-dial toggle"   # dial: volume <-> brightness
+index_tap     = "playerctl play-pause"
 middle_tap    = ""
 middle_hold   = ""
 
