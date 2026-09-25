@@ -522,7 +522,10 @@ rice_install_kinesis() {
         print_warning "kinesisd isn't installed — skipping its unit and config (rerun install.sh after fixing the build)"
         return 0
     fi
-    mkdir -p "$HOME/.config/systemd/user" "$HOME/.config/kinesis"
+    mkdir -p "$HOME/.config/systemd/user" "$HOME/.config/kinesis" "$HOME/.local/bin"
+    # ~/.cargo/bin isn't on PATH here; ~/.local/bin is.
+    ln -sf "$HOME/.cargo/bin/kinesisctl" "$HOME/.local/bin/kinesisctl"
+    ln -sf "$HOME/.cargo/bin/kinesisd" "$HOME/.local/bin/kinesisd"
     ln -sf "$src/contrib/kinesisd.service" "$HOME/.config/systemd/user/kinesisd.service"
     ln -sf "$DEPLOY_ROOT/.config/kinesis/config.toml" "$HOME/.config/kinesis/config.toml"
     systemctl --user daemon-reload 2>/dev/null || true
