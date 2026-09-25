@@ -4,7 +4,7 @@
 [band]
 hand = "band"
 autostart = true
-toggle_tap = "middle"   # triple tap middle finger: controls off/on
+toggle = "middle_hold"   # long-press middle finger: controls off/on
 on_toggle = '[ "$KINESIS_ENABLED" = 1 ] && ~/.local/bin/osd kinesis "󰍽  Band on" || ~/.local/bin/osd kinesis "󰍾  Band off"'
 
 [gestures]
