@@ -5,7 +5,7 @@
 hand = "band"
 autostart = true
 toggle = "middle_hold"   # long-press middle finger: controls off/on
-on_toggle = '[ "$KINESIS_ENABLED" = 1 ] && ~/.local/bin/osd kinesis "󰍽  Band on" || ~/.local/bin/osd kinesis "󰍾  Band off"'
+on_toggle = '[ "$KINESIS_ENABLED" = 1 ] && ~/.local/bin/osd kinesis "󰩏  Band on" || ~/.local/bin/osd kinesis "󱠱  Band off"'
 
 [gestures]
 swipe_left    = "hyprctl dispatch workspace e-1"
