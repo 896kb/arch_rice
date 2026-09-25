@@ -10,8 +10,8 @@ on_toggle = '[ "$KINESIS_ENABLED" = 1 ] && ~/.local/bin/osd kinesis "󰩏  Band 
 [gestures]
 swipe_left    = "hyprctl dispatch workspace e-1"
 swipe_right   = "hyprctl dispatch workspace e+1"
-swipe_up      = "pkill -x wofi || hyprctl dispatch exec 'wofi --show drun'"   # toggles
-swipe_down    = "hyprctl dispatch sendshortcut , Escape, activewindow"
+swipe_up      = "playerctl previous"
+swipe_down    = "playerctl next"
 index_double  = "~/.local/bin/kinesis-dial toggle"   # dial: volume <-> brightness
 middle_double = "~/.local/bin/audio-mute sink"
 index_tap     = "playerctl play-pause"
