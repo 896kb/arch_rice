@@ -507,32 +507,32 @@ else
     print_warning "no waybar fragment for profile '$RICE_PROFILE'"
 fi
 
-# --- Meta Neural Band (kinesis-linux submodule) -------------------------------
-rice_install_kinesis() {
-    local src="$RICE_ROOT/kinesis-linux"
-    [ -f "$src/Cargo.toml" ] || { print_warning "kinesis-linux submodule missing (git submodule update --init)"; return 0; }
-    command -v cargo >/dev/null || { print_warning "cargo not found — skipping kinesis-linux"; return 0; }
-    print_status "Building kinesisd + kinesisctl (cargo install)..."
+# --- Meta Neural Band (air-gestures submodule) -------------------------------
+rice_install_air_gestures() {
+    local src="$RICE_ROOT/air-gestures"
+    [ -f "$src/Cargo.toml" ] || { print_warning "air-gestures submodule missing (git submodule update --init)"; return 0; }
+    command -v cargo >/dev/null || { print_warning "cargo not found — skipping air-gestures"; return 0; }
+    print_status "Building air-gesturesd + air-gestures (cargo install)..."
     # rustup without a default toolchain still provides a `cargo` shim.
     rustup default >/dev/null 2>&1 || rustup default stable >/dev/null 2>&1 || true
-    cargo install --locked --path "$src/kinesisd" && cargo install --locked --path "$src/kinesisctl" \
-        && print_success "kinesisd + kinesisctl installed" \
-        || print_warning "kinesis-linux build failed, continuing..."
-    if [ ! -x "$HOME/.cargo/bin/kinesisd" ]; then
-        print_warning "kinesisd isn't installed — skipping its unit and config (rerun install.sh after fixing the build)"
+    cargo install --locked --path "$src/air-gesturesd" && cargo install --locked --path "$src/air-gestures" \
+        && print_success "air-gesturesd + air-gestures installed" \
+        || print_warning "air-gestures build failed, continuing..."
+    if [ ! -x "$HOME/.cargo/bin/air-gesturesd" ]; then
+        print_warning "air-gesturesd isn't installed — skipping its unit and config (rerun install.sh after fixing the build)"
         return 0
     fi
-    mkdir -p "$HOME/.config/systemd/user" "$HOME/.config/kinesis" "$HOME/.local/bin"
+    mkdir -p "$HOME/.config/systemd/user" "$HOME/.config/air-gestures" "$HOME/.local/bin"
     # ~/.cargo/bin isn't on PATH here; ~/.local/bin is.
-    ln -sf "$HOME/.cargo/bin/kinesisctl" "$HOME/.local/bin/kinesisctl"
-    ln -sf "$HOME/.cargo/bin/kinesisd" "$HOME/.local/bin/kinesisd"
-    ln -sf "$src/contrib/kinesisd.service" "$HOME/.config/systemd/user/kinesisd.service"
-    ln -sf "$DEPLOY_ROOT/.config/kinesis/config.toml" "$HOME/.config/kinesis/config.toml"
+    ln -sf "$HOME/.cargo/bin/air-gestures" "$HOME/.local/bin/air-gestures"
+    ln -sf "$HOME/.cargo/bin/air-gesturesd" "$HOME/.local/bin/air-gesturesd"
+    ln -sf "$src/contrib/air-gesturesd.service" "$HOME/.config/systemd/user/air-gesturesd.service"
+    ln -sf "$DEPLOY_ROOT/.config/air-gestures/config.toml" "$HOME/.config/air-gestures/config.toml"
     systemctl --user daemon-reload 2>/dev/null || true
-    print_success "kinesisd unit linked (started by Hyprland exec-once; pair with: kinesisctl pair)"
+    print_success "air-gesturesd unit linked (started by Hyprland exec-once; pair with: air-gestures pair)"
 }
 if rice_has_feature neural_band; then
-    rice_install_kinesis
+    rice_install_air_gestures
 fi
 
 # --- system services + tweaks -----------------------------------------------

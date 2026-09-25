@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# One pinch-dial step for kinesisd, with the rice's OSD.
-#   kinesis-dial volume up|down
-#   kinesis-dial brightness up|down
-#   kinesis-dial toggle            (swap the dial between volume and brightness)
+# One pinch-dial step for air-gesturesd, with the rice's OSD.
+#   air-gestures-dial volume up|down
+#   air-gestures-dial brightness up|down
+#   air-gestures-dial toggle            (swap the dial between volume and brightness)
 OSD="$HOME/.local/bin/osd"
 if [ "$1" = toggle ]; then
-    kinesisctl dial cycle >/dev/null || exit 1
-    case "$(kinesisctl status | sed -n 's/^dial: //p')" in
+    air-gestures dial cycle >/dev/null || exit 1
+    case "$(air-gestures status | sed -n 's/^dial: //p')" in
         brightness) "$OSD" dial "󰃠  Dial: brightness" ;;
         *)          "$OSD" dial "󰕾  Dial: volume" ;;
     esac
@@ -17,7 +17,7 @@ case "$1 $2" in
     "volume down") wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- ;;
     "brightness up")   exec "$HOME/.local/bin/rocker" bright-up ;;
     "brightness down") exec "$HOME/.local/bin/rocker" bright-down ;;
-    *) echo "usage: kinesis-dial {volume|brightness} {up|down} | toggle" >&2; exit 2 ;;
+    *) echo "usage: air-gestures-dial {volume|brightness} {up|down} | toggle" >&2; exit 2 ;;
 esac
 v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{printf "%d", $2*100+0.5}')
 "$OSD" vol "󰕾  ${v}%" "$v"

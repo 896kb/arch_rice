@@ -72,10 +72,10 @@
 .config/nvim/.neoconf.json
 
 
-# kinesis-linux (Meta Neural Band controller) — git submodule, see README
+# air-gestures (Meta Neural Band controller) — git submodule, see README
 !.gitmodules
-!kinesis-linux
+!air-gestures
 
-# kinesis-linux (Neural Band) config
-!.config/kinesis
-!.config/kinesis/**/*
+# air-gestures (Neural Band) config
+!.config/air-gestures
+!.config/air-gestures/**/*

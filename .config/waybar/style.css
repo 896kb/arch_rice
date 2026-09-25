@@ -89,10 +89,10 @@ window#waybar {
 #custom-earbuds.on  { color: #b5bd68; }  /* green = connected */
 #custom-earbuds.low { color: #f0c674; }  /* amber = battery < 20% */
 #custom-earbuds.off { color: #555555; }  /* gray  = disconnected */
-#custom-kinesis { padding: 0 10px; margin: 0 5px; }
-#custom-kinesis.connected  { color: #b5bd68; }  /* green = connected */
-#custom-kinesis.paused     { color: #ffff78; }  /* accent = controls paused */
-#custom-kinesis.pairing,
-#custom-kinesis.connecting { color: #81a2be; }  /* blue = busy */
-#custom-kinesis.low        { color: #f0c674; }  /* amber = battery < 20% */
-#custom-kinesis.off        { color: #555555; }  /* gray = not connected */
+#custom-air-gestures { padding: 0 10px; margin: 0 5px; }
+#custom-air-gestures.connected  { color: #b5bd68; }  /* green = connected */
+#custom-air-gestures.paused     { color: #ffff78; }  /* accent = controls paused */
+#custom-air-gestures.pairing,
+#custom-air-gestures.connecting { color: #81a2be; }  /* blue = busy */
+#custom-air-gestures.low        { color: #f0c674; }  /* amber = battery < 20% */
+#custom-air-gestures.off        { color: #555555; }  /* gray = not connected */

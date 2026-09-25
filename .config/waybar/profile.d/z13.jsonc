@@ -5,7 +5,7 @@
 {
     "modules-right": [
         "custom/rearcam",
-        "custom/kinesis",
+        "custom/air-gestures",
         "custom/earbuds",
         "disk",
         "custom/backlight",
@@ -25,15 +25,15 @@
         "format": "{}"
     },
 
-    // Meta Neural Band (kinesisd) — status/battery, click connect/disconnect,
+    // Meta Neural Band (air-gesturesd) — status/battery, click connect/disconnect,
     // right-click pause, middle-click dial volume<->brightness
-    "custom/kinesis": {
-        "exec": "~/.cargo/bin/kinesisctl status --waybar --follow",
+    "custom/air-gestures": {
+        "exec": "~/.cargo/bin/air-gestures status --waybar --follow",
         "return-type": "json",
         "format": "{}",
-        "on-click": "~/.cargo/bin/kinesisctl toggle-connection",
-        "on-click-right": "~/.cargo/bin/kinesisctl toggle",
-        "on-click-middle": "~/.cargo/bin/kinesisctl dial cycle",
+        "on-click": "~/.cargo/bin/air-gestures toggle-connection",
+        "on-click-right": "~/.cargo/bin/air-gestures toggle",
+        "on-click-middle": "~/.cargo/bin/air-gestures dial cycle",
         "tooltip": true
     }
 }

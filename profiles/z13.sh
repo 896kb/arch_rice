@@ -12,7 +12,7 @@ PROFILE_FEATURES=(
     tablet            # accelerometer rotation, pen, on-screen keyboard, gestures
     earbuds           # Xiaomi Buds 6 widget + daemon
     backlight
-    neural_band       # Meta Neural Band via kinesis-linux (kinesisd + kinesisctl)
+    neural_band       # Meta Neural Band via air-gestures (air-gesturesd + air-gestures)
 )
 
 PROFILE_PACMAN=(
@@ -22,9 +22,9 @@ PROFILE_PACMAN=(
     "v4l2loopback-dkms"           # rear IPU6 camera -> browser loopback
     "linux-headers"               # build the v4l2loopback dkms module
     "python-evdev"                # pen-screenshotd
-    # Meta Neural Band (kinesis-linux, built from source by install.sh)
+    # Meta Neural Band (air-gestures, built from source by install.sh)
     "rustup"                      # cargo/rustc toolchain
-    "webkit2gtk-4.1"              # kinesisctl Meta sign-in window
+    "webkit2gtk-4.1"              # air-gestures Meta sign-in window
 )
 
 PROFILE_AUR=(
